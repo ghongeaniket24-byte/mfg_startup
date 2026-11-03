@@ -1254,7 +1254,7 @@ async function loadUsage(){try{UG.rows=await USAGE.fetch(UG.days);UG.err=''}catc
 async function loadUsers(){try{UG.users=await USAGE.users();UG.err=''}catch(e){UG.users=[];UG.err=(e&&e.message)||'Could not load users'}render()}
 function vAdmin(){
   const tab=ST.tab.admin||'usage';const ud=+ST.filter.usedays||30;if(ud!==UG.days){UG.days=ud;UG.rows=null}
-  const tabs=`<div class="tabs"><button aria-selected="${tab==='usage'}" data-act="tab" data-k="admin" data-v="usage">Usage</button><button aria-selected="${tab==='users'}" data-act="tab" data-k="admin" data-v="users">Users & roles</button><button aria-selected="${tab==='access'}" data-act="tab" data-k="admin" data-v="access">Sign-in options</button></div>`;
+  const tabs=`<div class="tabs"><button aria-selected="${tab==='usage'}" data-act="tab" data-k="admin" data-v="usage">Usage</button><button aria-selected="${tab==='users'}" data-act="tab" data-k="admin" data-v="users">Users & roles</button><button aria-selected="${tab==='access'}" data-act="tab" data-k="admin" data-v="access">Sign-in options</button><button aria-selected="${tab==='account'}" data-act="tab" data-k="admin" data-v="account">My account</button></div>`;
   let body='';
   if(tab==='usage'){
     if(UG.rows==null){loadUsage();body='<div class="card"><div class="skeleton" style="width:50%"></div></div>'}
@@ -1282,9 +1282,25 @@ function vAdmin(){
      <div class="tbl"><table><thead><tr><th>Email</th><th>Role</th></tr></thead><tbody>${UG.users.map(u=>`<tr><td>${esc(u.email)}${u.email===AUTH.email?' <span class="muted small">(you)</span>':''}</td><td>${MODE==='supabase'&&u.email!==AUTH.email?`<select data-role="${u.id}"><option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option><option value="super_admin" ${u.role==='super_admin'?'selected':''}>Super admin</option></select>`:pill(u.role==='super_admin'?'Super admin':'Viewer',u.role==='super_admin'?'info':'')}</td></tr>`).join('')}</tbody></table></div></div>`;
   }
   if(tab==='access')body=`<div class="card"><h2>How sign-in works here</h2><dl class="spec" style="margin-top:8px"><dt>Now</dt><dd>${MODE==='supabase'?'Email and password through Supabase Auth. Roles live in the profiles table and are enforced by database row-level security, not just by this page.':'Demo accounts only. Real enforcement needs the Supabase version.'}</dd><dt>Magic link</dt><dd>Passwordless email link. Turn it on in Supabase > Authentication > Providers > Email.</dd><dt>Google or Microsoft</dt><dd>Add the provider in Supabase and set AUTH_PROVIDERS=google,azure in Vercel. Users then see a button on the sign-in screen.</dd><dt>Company single sign-on</dt><dd>SAML SSO through your identity provider (Okta, Entra ID, Google Workspace). Needs a Supabase Pro plan. Set AUTH_SSO=true in Vercel to show a work-email option.</dd><dt>Roles after SSO</dt><dd>Everyone who arrives through SSO starts as Viewer. A super admin promotes people on the Users tab.</dd></dl></div>`;
+  if(tab==='account')body=MODE!=='supabase'?`<div class="card"><h2>My account</h2><p class="muted">Password changes are available in the full version, which uses real accounts. The public demo has none.</p></div>`:`<div class="card" style="max-width:460px"><h2>Change my password</h2><p class="muted small">Signed in as ${esc(AUTH.email)}. We email a one-time code to this address. Enter it with your new password to confirm the change.</p>
+   <form id="pwf" class="f" autocomplete="off"><div class="row"><button class="btn" type="button" data-act="pw-send">Email me a code</button><span id="pwsent" class="muted small"></span></div>
+   <label>Code from the email<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label>
+   <label>New password (8+ characters)<input name="pw1" type="password" minlength="8" autocomplete="new-password" required></label>
+   <label>Repeat new password<input name="pw2" type="password" minlength="8" autocomplete="new-password" required></label>
+   <div class="errs" id="pwerr"></div><div class="row"><button class="btn pri" type="submit">Change password</button></div></form></div>`;
   return header('Admin','Who is using the app, and what they can do.')+exampleBanner()+tabs+body;
 }
 COLS.accounts.splice(4,0,{l:'Plant',f:r=>esc(nm('plants',r.plant_id)),s:r=>nm('plants',r.plant_id)});
+
+document.addEventListener('submit',async e=>{
+  if(e.target.id!=='pwf')return;e.preventDefault();const f=e.target,err=$('#pwerr');err.textContent='';
+  const code=f.code.value.trim(),p1=f.pw1.value,p2=f.pw2.value;
+  if(p1.length<8){err.textContent='Use at least 8 characters.';return}
+  if(p1!==p2){err.textContent='The two passwords do not match.';return}
+  const {error}=await SB.auth.updateUser({password:p1,nonce:code});
+  if(error){err.textContent=error.message;return}
+  f.reset();toast('Password changed');
+});
 
 /* ---- navigation, rendering, auth ---- */
 const NAVX=[['dashboard','Dashboard'],['accounts','Accounts'],['pipeline','Pipeline'],['orders','Orders'],['products','Products'],['inventory','Inventory'],['purchasing','Purchasing'],['production','Production'],['demand','Demand'],['plants','Plants'],['finance','Finance'],['tasks','Tasks']];
@@ -1299,7 +1315,7 @@ function parseHash(){const h=location.hash.replace('#','');if(!h)return {name:'d
   return {name:[...NAVX,['data'],['admin']].some(n=>n[0]===h)?h:'dashboard'}}
 function exampleBanner(){
   const role=!isAdmin()?`<div class="banner"><span>You are signed in as <b>Viewer</b>. You can look at everything but not change it.</span></div>`:'';
-  if(MODE==='demo')return role+`<div class="banner info"><span>Public demo. Every record is made-up example data. Edits stay in this tab and reset when you reload. Sign in as the demo super admin to try editing and the Admin page.</span><button class="btn sm" onclick="location.reload()">Reset demo</button></div>`;
+  if(MODE==='demo')return role+`<div class="banner info"><span>Public demo. Every record is made-up example data. Edits stay in this tab and reset when you reload. Sign in as the viewer to look around.</span><button class="btn sm" onclick="location.reload()">Reset demo</button></div>`;
   if(!S.accounts.length&&!S.products.length&&!S.orders.length&&!FULL.plants.length)return role+`<div class="banner info wronly"><span>This workspace is empty. Load a small example (three plants, paper cups, bowls and plates) to see every screen working, or start by adding your first plant.</span><button class="btn sm pri" data-act="load-examples">Load example data</button></div>`;
   const n=COLLS.reduce((s,c)=>s+FULL[c].filter(r=>r.example).length,0);
   return role+(n&&isAdmin()?`<div class="banner"><span>This workspace holds ${n} example records. Replace them with your own, or remove them all.</span><button class="btn sm" data-act="clear-examples">Remove example data</button></div>`:'');
@@ -1340,6 +1356,7 @@ Object.assign(ACT,{
  'img-add':d=>{const i=$('#imgfile');if(i)i.click()},
  'img-del':async d=>{const p=get('products',d.id);if(!p)return;const im=(p.images||[]).filter((_,i)=>i!==+d.i);ST.tab.img=undefined;await patch('products',p.id,{images:im});toast('Image removed')},
  'fin-new':async d=>{const pl=get('plants',d.id);const id='fin_'+d.id;await DB.collection('finance').doc(id).set({plant_id:d.id,machine_cost:0,other_capex:0,working_capital:0,rent_month:0,labor_heads:2,wage_month:0,utilities_month:0,other_opex_month:0,rate_hr:3000,hours_day:8,days_month:24,efficiency:70,price_k:0,material_k:0,loan:0,loan_rate:10,loan_years:5,note:'Fill in your own numbers.',updated_at:new Date().toISOString()});toast('Model created');},
+ 'pw-send':async()=>{const {error}=await SB.auth.reauthenticate();$('#pwsent').textContent=error?error.message:'Code sent. Check your email.'},
  'usage-refresh':()=>{UG.rows=null;render()},
  signout:async()=>{if(MODE==='supabase'){await SB.auth.signOut()}try{sessionStorage.removeItem('pl_user')}catch(e){}location.reload()},
  'load-examples':(d,e)=>loadExamples(e.target)
@@ -1371,7 +1388,8 @@ async function loadExamples(btn){
 }
 
 /* ---- sign-in and boot ---- */
-const DEMO_USERS={'viewer@plantline.demo':{pw:'viewer-demo',role:'viewer'},'admin@plantline.demo':{pw:'admin-demo',role:'super_admin'}};
+const DEMO_USERS={'viewer@plantline.demo':{pw:'viewer-demo',role:'viewer'},'admin@plantline.demo':{hash:'692e7dfc8414d41e124a6d84b01059594a8338fff02f7f3e7d90fcf4258462bf',role:'super_admin'}};
+const sha256=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 function startApp(email,role,uid){
   AUTH={email,role,uid:uid||null,ready:true};
   $('#login').hidden=true;$('#app').hidden=false;
@@ -1385,13 +1403,13 @@ function showLogin(){
    <form id="loginf" class="f"><label>Email<input id="lemail" type="email" autocomplete="username" required></label>
    <label>Password<input id="lpass" type="password" autocomplete="current-password" required></label><div class="errs" id="lerr"></div>
    <div class="row"><button class="btn pri" type="submit">Sign in</button></div></form>
-   ${MODE==='demo'?`<div class="demo"><b>Demo accounts</b><br>Viewer (view-only): <code>viewer@plantline.demo</code> / <code>viewer-demo</code><br>Super admin (edit and Admin page): <code>admin@plantline.demo</code> / <code>admin-demo</code><div class="row" style="margin-top:8px"><button class="btn sm" data-fill="v">Use viewer</button><button class="btn sm" data-fill="a">Use super admin</button></div><div class="muted" style="margin-top:6px">These are shared sample logins for a demo with made-up data. The full version uses real accounts and the database enforces the roles.</div></div>`:
+   ${MODE==='demo'?`<div class="demo"><b>Demo viewer account</b><br><code>viewer@plantline.demo</code> / <code>viewer-demo</code><div class="row" style="margin-top:8px"><button class="btn sm" data-fill="v">Use viewer</button></div><div class="muted" style="margin-top:6px">View-only, made-up data. Administrators sign in with their own email and password.</div></div>`:
    `<div class="alt"><button class="btn" data-alt="magic" type="button">Email me a sign-in link</button>${prov.map(p=>`<button class="btn" data-alt="oauth" data-p="${esc(p)}" type="button">Continue with ${p==='azure'?'Microsoft':p[0].toUpperCase()+p.slice(1)}</button>`).join('')}${sso?`<button class="btn" data-alt="sso" type="button">Company single sign-on</button>`:''}</div>`}`;
   $('#loginf').addEventListener('submit',async e=>{e.preventDefault();const em=$('#lemail').value.trim().toLowerCase(),pw=$('#lpass').value;const err=$('#lerr');err.textContent='';
-    if(MODE==='demo'){const u=DEMO_USERS[em];if(!u||u.pw!==pw){err.textContent='Email or password not recognised. Use one of the demo accounts below.';return}try{sessionStorage.setItem('pl_user',JSON.stringify({email:em}))}catch(x){}startApp(em,u.role);return}
+    if(MODE==='demo'){const u=DEMO_USERS[em];const okp=u&&(u.pw?u.pw===pw:u.hash===await sha256(em+':'+pw));if(!okp){err.textContent='Email or password not recognised. Check them and try again.';return}try{sessionStorage.setItem('pl_user',JSON.stringify({email:em}))}catch(x){}startApp(em,u.role);return}
     const {data,error}=await SB.auth.signInWithPassword({email:em,password:pw});if(error){err.textContent=error.message;return}await enterSb(data.user)});
   L.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
-    if(b.dataset.fill){$('#lemail').value=b.dataset.fill==='v'?'viewer@plantline.demo':'admin@plantline.demo';$('#lpass').value=b.dataset.fill==='v'?'viewer-demo':'admin-demo'}
+    if(b.dataset.fill){$('#lemail').value='viewer@plantline.demo';$('#lpass').value='viewer-demo'}
     if(b.dataset.alt==='magic'){const em=$('#lemail').value.trim();if(!em){$('#lerr').textContent='Type your email first.';return}const {error}=await SB.auth.signInWithOtp({email:em,options:{shouldCreateUser:false}});$('#lerr').textContent=error?error.message:'Check your email for the sign-in link.'}
     if(b.dataset.alt==='oauth'){const {error}=await SB.auth.signInWithOAuth({provider:b.dataset.p,options:{redirectTo:location.origin}});if(error)$('#lerr').textContent=error.message}
     if(b.dataset.alt==='sso'){const em=$('#lemail').value.trim();const dom=em.split('@')[1];if(!dom){$('#lerr').textContent='Type your work email first.';return}const {data,error}=await SB.auth.signInWithSSO({domain:dom});if(error)$('#lerr').textContent=error.message;else if(data&&data.url)location.href=data.url}
