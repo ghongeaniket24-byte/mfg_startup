@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Plantline Ops: a CRM and operations demo for a small manufacturer, built with agentic AI. Example data, nothing is saved.">
+<title>Plantline Ops (public demo)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: left rail navigation + one working column. Dense, table-first, numbers in mono. */
+:root{
+  --bg:#f2f4f8; --surface:#ffffff; --surface2:#e9edf4; --line:#d6dce7; --fg:#141a26; --muted:#586379;
+  --accent:#2549c9; --accent-fg:#ffffff; --accent-soft:#e1e8fb; --accent2:#9fb2ee;
+  --good:#17744a; --good-soft:#dff3e8; --warn:#9a5b00; --warn-soft:#fbefd2; --bad:#bd2626; --bad-soft:#fbe0e0;
+  --shadow:0 1px 2px rgba(20,26,38,.06),0 6px 20px rgba(20,26,38,.07);
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-head:'Archivo','IBM Plex Sans',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1219; --surface:#161c26; --surface2:#1e2632; --line:#2a3443; --fg:#e5e9f1; --muted:#95a1b6;
+  --accent:#86a2ff; --accent-fg:#0a1022; --accent-soft:#1c2a55; --accent2:#3c4f8f;
+  --good:#52c78e; --good-soft:#15382a; --warn:#e8ac45; --warn-soft:#3a2d12; --bad:#ff8080; --bad-soft:#431c1c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1219; --surface:#161c26; --surface2:#1e2632; --line:#2a3443; --fg:#e5e9f1; --muted:#95a1b6;
+  --accent:#86a2ff; --accent-fg:#0a1022; --accent-soft:#1c2a55; --accent2:#3c4f8f;
+  --good:#52c78e; --good-soft:#15382a; --warn:#e8ac45; --warn-soft:#3a2d12; --bad:#ff8080; --bad-soft:#431c1c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+h1,h2,h3{font-family:var(--f-head);margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:24px} h2{font-size:17px} h3{font-size:14px}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:12px}
+#app{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;max-width:1360px;margin:0 auto;padding-block:16px 48px}
+nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;flex-direction:column;gap:2px;padding:4px 10px 14px}
+.brand b{font-family:var(--f-head);font-size:17px;letter-spacing:-.01em}
+.brand span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+nav a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:500;white-space:nowrap}
+nav a:hover{background:var(--surface2);color:var(--fg)}
+nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+nav .badge{font-family:var(--f-mono);font-size:11px;background:var(--bad);color:#fff;border-radius:9px;padding:0 6px}
+nav .sep{height:1px;background:var(--line);margin:8px 10px}
+main{min-width:0}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.top p{margin:4px 0 0;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.pri:hover{filter:brightness(1.08);color:var(--accent-fg)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:default}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi .v{font-family:var(--f-mono);font-size:22px;font-weight:500;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.cols2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card>h2,.card>.hd{margin-bottom:10px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.card .tbl{border:0;border-radius:0}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+td.wrap{white-space:normal;min-width:200px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--surface);position:sticky;top:0;cursor:default}
+th.sort{cursor:pointer} th.sort:hover{color:var(--accent)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr[data-act]{cursor:pointer}
+tbody tr[data-act]:hover td{background:var(--surface2)}
+td.r,th.r{text-align:right}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:10px;background:var(--surface2);color:var(--muted);text-transform:capitalize;letter-spacing:.02em}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--accent-soft);color:var(--accent)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.tools input,.tools select,.f input,.f select,.f textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-width:0}
+.tools input[type=search]{min-width:min(100%,240px)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.banner{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-weight:500}
+.banner.info{background:var(--accent-soft);color:var(--accent)}
+.rec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rec:last-child{border-bottom:0}
+.rec .t{font-weight:600} .rec .w{color:var(--muted);font-size:13px}
+.kanban{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:10px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--surface2);border-radius:8px;padding:8px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.col .ch{display:flex;justify-content:space-between;font-weight:600;padding:2px 4px}
+.deal{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.deal select{font-size:12px;padding:2px 4px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 16px}
+.dl dt{color:var(--muted)} .dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.heat td.c{text-align:center;font-family:var(--f-mono);font-size:12px;padding:6px 8px}
+.h0{background:var(--surface2)} .h1{background:var(--good-soft);color:var(--good)} .h2{background:var(--warn-soft);color:var(--warn)} .h3{background:var(--bad-soft);color:var(--bad);font-weight:600}
+svg text{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+svg .ax{stroke:var(--line);stroke-width:1} svg .capl{stroke:var(--fg);stroke-width:1.5;fill:none;stroke-dasharray:4 3}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.chartwrap{overflow-x:auto}
+.chartwrap svg{min-width:520px;width:100%;height:auto;display:block}
+/* modal */
+#modal{position:fixed;inset:0;z-index:50;background:rgba(10,14,22,.55);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#modal.on{display:flex}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);width:min(720px,100%);margin:auto;padding:18px 20px}
+.f{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;margin:14px 0}
+.f label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+.f label.full{grid-column:1/-1}
+.f input,.f select,.f textarea{width:100%;color:var(--fg);font-size:14px}
+.f input[type=checkbox]{width:auto;align-self:flex-start}
+.f .err{color:var(--bad)}
+.lines{display:flex;flex-direction:column;gap:6px}
+.lrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr)) auto;gap:6px;align-items:end}
+.lrow label{font-size:11px}
+.errs{color:var(--bad);font-size:13px;margin-top:6px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:8px;z-index:60;display:none;max-width:90vw}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.skeleton{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--surface2),var(--line),var(--surface2));background-size:200% 100%;animation:sk 1.2s infinite linear}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+pre.json{background:var(--surface2);padding:10px;border-radius:6px;overflow:auto;font-family:var(--f-mono);font-size:12px;margin:0;white-space:pre-wrap}
+@media (max-width:820px){
+  #app{grid-template-columns:minmax(0,1fr);gap:8px}
+  nav{position:sticky;top:env(safe-area-inset-top,0px);flex-direction:row;overflow-x:auto;background:var(--bg);z-index:5;padding:6px 0;margin:0 -2px;gap:2px}
+  .brand,nav .sep{display:none}
+  h1{font-size:20px}
+}
+[hidden]{display:none!important}
+html{color-scheme:light dark}
+</style>
+</head><body>
+<div id="app">
+  <nav id="nav" aria-label="Sections"></nav>
+  <main id="main"><div class="card"><div class="skeleton" style="width:40%"></div><br><div class="skeleton" style="width:90%"></div><br><div class="skeleton" style="width:70%"></div></div></main>
+</div>
+<div id="modal" role="dialog" aria-modal="true"></div>
+<div id="toast" role="status"></div>
+
+<script>
+/* ============ helpers ============ */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+Math.random().toString(36).slice(2,9);
+const DAY=864e5;
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const parseD=s=>{if(!s)return null;const p=String(s).slice(0,10).split('-').map(Number);if(p.length<3||p.some(isNaN))return null;return new Date(p[0],p[1]-1,p[2])};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const monday=d=>{const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const todayD=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD=s=>{const d=s instanceof Date?s:parseD(s);return d?MON[d.getMonth()]+' '+d.getDate():'–'};
+const fmtDY=s=>{const d=s instanceof Date?s:parseD(s);return d?MON[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear():'–'};
+const N=(v,d=0)=>v==null||isNaN(v)?'–':Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(v,d=0)=>v==null||!isFinite(v)?'–':(v*100).toFixed(d)+'%';
+let CUR_CODE='USD';
+const M=(v,d=0)=>{if(v==null||isNaN(v))return '–';try{return new Intl.NumberFormat(undefined,{style:'currency',currency:CUR_CODE,minimumFractionDigits:d,maximumFractionDigits:d}).format(v)}catch(e){return N(v,d)}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const pill=(t,k='')=>`<span class="pill ${k}">${esc(t)}</span>`;
+const toast=(m)=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2800)};
+
+/* ============ data layer (db capability, in-memory fallback) ============ */
+const COLLS=['accounts','contacts','activities','deals','products','materials','suppliers','pos','orders','workcenters','workorders','tasks','changelog','decisions','settings'];
+const S={}; COLLS.forEach(c=>S[c]=[]);
+const LOADED={}; let DB=null, PERSIST=true;
+function makeMem(){const data={},subs={};const snap=n=>({docs:Object.entries(data[n]||{}).map(([id,v])=>({id,exists:true,data:()=>v}))});
+  const emit=n=>(subs[n]||[]).forEach(f=>f(snap(n)));
+  return {collection:n=>({onSnapshot(f){(subs[n]=subs[n]||[]).push(f);setTimeout(()=>f(snap(n)),0);return()=>{}},
+    doc:id=>({set:async v=>{(data[n]=data[n]||{})[id]=v;emit(n)},update:async v=>{data[n]=data[n]||{};data[n][id]={...data[n][id],...v};emit(n)},delete:async()=>{if(data[n])delete data[n][id];emit(n)}})})}}
+let renderQ=0;
+function scheduleRender(){cancelAnimationFrame(renderQ);renderQ=requestAnimationFrame(render)}
+async function initDb(){
+  DB=makeMem();PERSIST=true;
+  await seedDemo();
+  COLLS.forEach(c=>DB.collection(c).onSnapshot(snap=>{
+    S[c]=snap.docs.map(d=>({id:d.id,...d.data()}));LOADED[c]=true;scheduleRender();
+  },err=>{LOADED[c]=true;scheduleRender()}));
+}
+const allLoaded=()=>COLLS.every(c=>LOADED[c]);
+const get=(c,id)=>S[c].find(r=>r.id===id);
+const nm=(c,id,k='name')=>{const r=get(c,id);return r?(r[k]||r.id):'–'};
+
+/* ============ schema (drives forms, tables, dictionary) ============ */
+const ORDER_FLOW=['Quote','Confirmed','In production','Shipped','Invoiced','Paid'];
+const STAGES=['Lead','Sampling','Quote sent','Negotiation','Won','Lost'];
+const PROB={Lead:.1,Sampling:.25,'Quote sent':.5,Negotiation:.7,Won:1,Lost:0};
+const SCHEMA={
+ accounts:{label:'Account',pfx:'a',defaults:()=>({status:'prospect',include:false,ramp_pct:[15,30,50,70,85,100]}),fields:[
+  {k:'name',l:'Company',t:'text',req:1,src:'Entered by account owner'},
+  {k:'status',l:'Status',t:'sel',o:['prospect','onboarding','active','paused','churned'],req:1,src:'Entered; moves with deals'},
+  {k:'segment',l:'Segment',t:'text',list:1,src:'Entered'},
+  {k:'industry',l:'Industry',t:'text',src:'Entered'},
+  {k:'city',l:'City',t:'text',src:'Entered'},{k:'country',l:'Country',t:'text',src:'Entered'},
+  {k:'owner',l:'Account owner',t:'text',src:'Entered'},
+  {k:'product_id',l:'Primary product',t:'ref',c:'products',src:'Entered'},
+  {k:'launch_date',l:'Launch / first order date',t:'date',src:'Entered'},
+  {k:'launch_k_week',l:'Steady-state volume',t:'num',u:'k pcs / week',src:'Customer forecast, confirmed by sales'},
+  {k:'ramp_pct',l:'Ramp % for weeks 1 to 6',t:'nums',u:'% of steady state',src:'Default by segment, overridable'},
+  {k:'include',l:'Include in demand forecast',t:'bool',src:'Entered; prospects default off'},
+  {k:'notes',l:'Notes',t:'area',src:'Entered'}]},
+ contacts:{label:'Contact',pfx:'c',fields:[
+  {k:'account_id',l:'Account',t:'ref',c:'accounts',req:1},{k:'name',l:'Name',t:'text',req:1},
+  {k:'role',l:'Role',t:'text'},{k:'email',l:'Email',t:'text'},{k:'phone',l:'Phone',t:'text'}]},
+ activities:{label:'Activity',pfx:'v',defaults:()=>({type:'note',date:iso(todayD())}),fields:[
+  {k:'account_id',l:'Account',t:'ref',c:'accounts',req:1},{k:'type',l:'Type',t:'sel',o:['note','call','email','meeting','sample sent','site visit'],req:1},
+  {k:'date',l:'Date',t:'date',req:1},{k:'text',l:'What happened',t:'area',req:1,full:1}]},
+ deals:{label:'Deal',pfx:'d',defaults:()=>({stage:'Lead'}),fields:[
+  {k:'title',l:'Deal',t:'text',req:1},{k:'account_id',l:'Account',t:'ref',c:'accounts',req:1},
+  {k:'stage',l:'Stage',t:'sel',o:STAGES,req:1},{k:'product_id',l:'Product',t:'ref',c:'products'},
+  {k:'qty_k_month',l:'Expected volume',t:'num',u:'k pcs / month'},{k:'value',l:'Expected revenue',t:'num',u:'currency / month'},
+  {k:'close_date',l:'Expected close',t:'date'}]},
+ products:{label:'Product',pfx:'p',defaults:()=>({scrap_pct:4,bom:[]}),fields:[
+  {k:'sku',l:'SKU',t:'text',req:1},{k:'name',l:'Name',t:'text',req:1},{k:'category',l:'Category',t:'text',list:1},
+  {k:'price_k',l:'Price',t:'num',u:'currency / 1,000 pcs',req:1},
+  {k:'wc_id',l:'Made on',t:'ref',c:'workcenters'},{k:'rate_hr',l:'Machine rate',t:'num',u:'pcs / hour',req:1},
+  {k:'scrap_pct',l:'Scrap',t:'num',u:'%'},
+  {k:'bom',l:'Bill of materials (per 1,000 pcs)',t:'lines',full:1,sub:[{k:'material_id',l:'Material',t:'ref',c:'materials'},{k:'qty_per_k',l:'Qty per 1,000',t:'num'}]}]},
+ materials:{label:'Material',pfx:'m',defaults:()=>({uom:'kg'}),fields:[
+  {k:'name',l:'Material',t:'text',req:1},{k:'uom',l:'Unit of measure',t:'text',req:1},
+  {k:'on_hand',l:'On hand',t:'num',req:1,src:'Counted; updated by work-order completion and receipts'},
+  {k:'reorder_point',l:'Reorder point',t:'num'},{k:'cost',l:'Unit cost',t:'num',u:'currency / unit'},
+  {k:'supplier_id',l:'Supplier',t:'ref',c:'suppliers'},{k:'lead_days',l:'Lead time',t:'num',u:'days'},{k:'min_order',l:'Minimum order',t:'num'}]},
+ suppliers:{label:'Supplier',pfx:'s',fields:[
+  {k:'name',l:'Supplier',t:'text',req:1},{k:'contact',l:'Contact',t:'text'},{k:'email',l:'Email',t:'text'},
+  {k:'phone',l:'Phone',t:'text'},{k:'lead_days',l:'Typical lead time',t:'num',u:'days'},{k:'terms',l:'Payment terms',t:'text'}]},
+ pos:{label:'Purchase order',pfx:'o',defaults:()=>({status:'Draft',lines:[]}),fields:[
+  {k:'po_no',l:'PO number',t:'text'},{k:'supplier_id',l:'Supplier',t:'ref',c:'suppliers',req:1},
+  {k:'status',l:'Status',t:'sel',o:['Draft','Sent','Received','Cancelled'],req:1},{k:'eta',l:'Expected arrival',t:'date'},
+  {k:'lines',l:'Lines',t:'lines',full:1,sub:[{k:'material_id',l:'Material',t:'ref',c:'materials'},{k:'qty',l:'Quantity',t:'num'}]}]},
+ orders:{label:'Order',pfx:'r',defaults:()=>({status:'Quote',order_date:iso(todayD()),lines:[]}),fields:[
+  {k:'order_no',l:'Number',t:'text'},{k:'account_id',l:'Customer',t:'ref',c:'accounts',req:1},
+  {k:'status',l:'Status',t:'sel',o:[...ORDER_FLOW,'Cancelled'],req:1},
+  {k:'order_date',l:'Order date',t:'date',req:1},{k:'due_date',l:'Due date',t:'date',req:1},
+  {k:'lines',l:'Lines',t:'lines',full:1,sub:[{k:'product_id',l:'Product',t:'ref',c:'products',auto:'price_k'},{k:'qty_k',l:'Qty (k pcs)',t:'num'},{k:'price_k',l:'Price / k',t:'num'}]}]},
+ workcenters:{label:'Work center',pfx:'w',defaults:()=>({hours_week:80,oee:70}),fields:[
+  {k:'name',l:'Name',t:'text',req:1},{k:'kind',l:'Kind',t:'text'},
+  {k:'hours_week',l:'Scheduled hours',t:'num',u:'h / week',req:1},{k:'oee',l:'Expected efficiency (OEE)',t:'num',u:'%',req:1}]},
+ workorders:{label:'Work order',pfx:'j',defaults:()=>({status:'Planned'}),fields:[
+  {k:'wo_no',l:'WO number',t:'text'},{k:'order_id',l:'Order',t:'ref',c:'orders',k2:'order_no'},
+  {k:'product_id',l:'Product',t:'ref',c:'products',req:1},{k:'qty_k',l:'Quantity',t:'num',u:'k pcs',req:1},
+  {k:'wc_id',l:'Work center',t:'ref',c:'workcenters'},{k:'week_start',l:'Week of',t:'date'},
+  {k:'status',l:'Status',t:'sel',o:['Planned','Running','Done']}]},
+ tasks:{label:'Task',pfx:'t',defaults:()=>({status:'open',priority:'normal'}),fields:[
+  {k:'title',l:'Task',t:'text',req:1,full:1},{k:'due',l:'Due',t:'date'},{k:'owner',l:'Owner',t:'text'},
+  {k:'priority',l:'Priority',t:'sel',o:['low','normal','high']},{k:'status',l:'Status',t:'sel',o:['open','doing','done']},
+  {k:'related',l:'Related to',t:'text'}]},
+ changelog:{label:'Change',pfx:'l',fields:[{k:'ts',l:'When',t:'text'},{k:'by',l:'Who',t:'text'},{k:'coll',l:'Collection',t:'text'},{k:'rec',l:'Record',t:'text'},{k:'field',l:'Field',t:'text'},{k:'old',l:'Old',t:'text'},{k:'new',l:'New',t:'text'}]},
+ decisions:{label:'Decision',pfx:'x',fields:[{k:'key',l:'Recommendation key',t:'text'},{k:'status',l:'Outcome',t:'text'},{k:'ts',l:'When',t:'text'}]},
+ settings:{label:'Settings',pfx:'z',fields:[]}
+};
+const DEFAULTS={company:'My Plant',cur:'USD',conv:9,season:[1.05,1,1,.98,.98,1,1,1.02,1.02,1.02,1.08,1.12],ramp:[15,30,50,70,85,100],quote_days:7,dormant_days:30,horizon:12};
+const cfg=()=>({...DEFAULTS,...(S.settings.find(x=>x.id==='main')||{})});
+
+/* ============ saving with append-only change log ============ */
+const nextNo=(coll,key,prefix,start)=>{let mx=start-1;S[coll].forEach(r=>{const m=String(r[key]||'').match(/(\d+)$/);if(m)mx=Math.max(mx,+m[1])});return prefix+(mx+1)};
+const short=v=>{if(v==null||v==='')return '';if(Array.isArray(v))return v.length&&typeof v[0]!=='object'?v.join(', '):v.length+' line(s)';return String(v).slice(0,80)};
+async function logChange(coll,id,old,nu,label){
+  if(coll==='changelog'||coll==='decisions')return;
+  const ts=new Date().toISOString(),rows=[];
+  if(!old){rows.push({field:'(created)',old:'',new:label||''})}
+  else Object.keys(nu).forEach(k=>{if(['updated_at','example'].includes(k))return;if(JSON.stringify(old[k])!==JSON.stringify(nu[k]))rows.push({field:k,old:short(old[k]),new:short(nu[k])})});
+  await Promise.all(rows.slice(0,8).map(r=>DB.collection('changelog').doc(uid('l')).set({ts,by:'you',coll,rec:id,label:label||'',...r})));
+}
+async function save(coll,rec,old,idOverride){
+  const id=idOverride||rec.id||uid(SCHEMA[coll].pfx);
+  const data=clone(rec);delete data.id;data.updated_at=new Date().toISOString();
+  Object.keys(data).forEach(k=>{if(data[k]===undefined)delete data[k]});
+  await DB.collection(coll).doc(id).set(data);
+  await logChange(coll,id,old?clone(old):null,data,data.name||data.title||data.order_no||data.po_no||data.sku||'');
+  return id;
+}
+async function patch(coll,id,fields,label){
+  const old=get(coll,id);const nu={...old,...fields};
+  return save(coll,nu,old,id);
+}
+async function remove(coll,id){
+  const old=get(coll,id);await DB.collection(coll).doc(id).delete();
+  await DB.collection('changelog').doc(uid('l')).set({ts:new Date().toISOString(),by:'you',coll,rec:id,label:old&&(old.name||old.title||old.order_no||old.po_no||''),field:'(deleted)',old:'',new:''});
+}
+
+/* ============ planning model ============ */
+const SEG_RAMP={};
+function fcK(a,ws,c){
+  if(!a||!a.include||!a.launch_date||!(a.launch_k_week>0))return 0;
+  const L=monday(parseD(a.launch_date));const w=Math.round((ws-L)/(7*DAY));if(w<0)return 0;
+  const ramp=a.ramp_pct&&a.ramp_pct.length?a.ramp_pct:c.ramp;
+  const r=w<ramp.length?(ramp[w]/100):1;
+  const mid=addDays(ws,3);const seas=(a.season_override&&a.season_override.length===12?a.season_override:c.season)[mid.getMonth()]||1;
+  return a.launch_k_week*r*seas;
+}
+const weekOf=s=>{const d=parseD(s);return d?iso(monday(d)):null};
+const OPEN_ORD=o=>o.status==='Confirmed'||o.status==='In production';
+const DONE_ORD=o=>['Shipped','Invoiced','Paid'].includes(o.status);
+function prodHours(p,k){if(!p||!p.rate_hr)return 0;return k*1000*(1+(p.scrap_pct||0)/100)/p.rate_hr}
+function planWeeks(n,startOffset=0){const w0=addDays(monday(todayD()),7*startOffset);return Array.from({length:n},(_,i)=>addDays(w0,7*i))}
+/* demand per week: booked (open orders) + unbooked (forecast minus booked per account) */
+let _plan=null;
+function plan(){
+  if(_plan)return _plan;
+  const c=cfg();
+  const weeks=planWeeks(c.horizon);const out=weeks.map(ws=>({ws,k:iso(ws),prod:{},wc:{}}));
+  const add=(row,pid,kind,k)=>{const p=get('products',pid);row.prod[pid]=row.prod[pid]||{booked:0,unbooked:0};row.prod[pid][kind]+=k;
+    const wcid=p&&p.wc_id||'_none';row.wc[wcid]=row.wc[wcid]||{booked:0,unbooked:0};row.wc[wcid][kind]+=prodHours(p,k)};
+  out.forEach(row=>{
+    const bookedAcc={};
+    S.orders.filter(o=>OPEN_ORD(o)&&weekOf(o.due_date)===row.k).forEach(o=>{(o.lines||[]).forEach(l=>{add(row,l.product_id,'booked',+l.qty_k||0);bookedAcc[o.account_id]=(bookedAcc[o.account_id]||0)+(+l.qty_k||0)})});
+    S.accounts.forEach(a=>{const f=fcK(a,row.ws,c);const un=Math.max(0,f-(bookedAcc[a.id]||0));if(un>0&&a.product_id)add(row,a.product_id,'unbooked',un)});
+  });
+  _plan=out;return out;
+}
+function wcCap(w){return (w.hours_week||0)*((w.oee==null?70:w.oee)/100)}
+function util(row,wcid){const w=get('workcenters',wcid);if(!w)return null;const x=row.wc[wcid]||{booked:0,unbooked:0};const cap=wcCap(w);return cap?{booked:x.booked,unbooked:x.unbooked,cap,u:(x.booked+x.unbooked)/cap}:null}
+function matConsumption(weeks=4){ // per material, units per week average over next N weeks
+  const rows=plan().slice(0,weeks);const out={};
+  rows.forEach(r=>Object.entries(r.prod).forEach(([pid,x])=>{const p=get('products',pid);(p&&p.bom||[]).forEach(b=>{out[b.material_id]=(out[b.material_id]||0)+(x.booked+x.unbooked)*(+b.qty_per_k||0)})}));
+  Object.keys(out).forEach(k=>out[k]/=weeks);return out;
+}
+function onOrder(mid){let s=0;S.pos.filter(p=>p.status==='Sent').forEach(p=>(p.lines||[]).forEach(l=>{if(l.material_id===mid)s+=+l.qty||0}));return s}
+function matStatus(m){
+  const wk=matConsumption(4)[m.id]||0;const cover=wk>0?(m.on_hand||0)/(wk/7):null;const oo=onOrder(m.id);
+  const lead=m.lead_days||0;
+  const need=(m.on_hand||0)<(m.reorder_point||0)||(cover!=null&&cover<lead+3);
+  const covered=need&&((m.on_hand||0)+oo)>=Math.max(m.reorder_point||0,wk*(lead+3)/7);
+  return {wk,cover,oo,need:need&&!covered,flag:need};
+}
+function productCost(p){let s=cfg().conv;(p.bom||[]).forEach(b=>{const m=get('materials',b.material_id);if(m)s+=(+b.qty_per_k||0)*(m.cost||0)});return s}
+function accuracy(){
+  const c=cfg();const weeks=planWeeks(6,-6);const per={};
+  weeks.forEach(ws=>{const k=iso(ws);
+    S.accounts.forEach(a=>{per[a.id]=per[a.id]||{a:0,f:0,ae:0};const f=fcK(a,ws,c);
+      let act=0;S.orders.filter(o=>o.account_id===a.id&&DONE_ORD(o)&&weekOf(o.due_date)===k).forEach(o=>(o.lines||[]).forEach(l=>act+=+l.qty_k||0));
+      if(a.include||act>0){per[a.id].a+=act;per[a.id].f+=f;per[a.id].ae+=Math.abs(act-f)}})});
+  const seg={};let A=0,F=0,AE=0;
+  Object.entries(per).forEach(([id,x])=>{if(!x.a&&!x.f)return;const a=get('accounts',id);const s=(a&&a.segment)||'Unassigned';seg[s]=seg[s]||{a:0,f:0,ae:0};seg[s].a+=x.a;seg[s].f+=x.f;seg[s].ae+=x.ae;A+=x.a;F+=x.f;AE+=x.ae});
+  const series=weeks.map(ws=>{const k=iso(ws);let act=0,f=0;S.orders.filter(o=>DONE_ORD(o)&&weekOf(o.due_date)===k).forEach(o=>(o.lines||[]).forEach(l=>act+=+l.qty_k||0));S.accounts.forEach(a=>f+=fcK(a,ws,c));return {ws,act,f}});
+  return {per,seg,A,F,wape:A?AE/A:null,bias:A?(F-A)/A:null,series};
+}
+
+/* ============ recommendations: detect -> propose -> approve -> apply ============ */
+function recs(){
+  const c=cfg(),out=[],decided=new Set(S.decisions.map(d=>d.key));const wk=iso(monday(todayD()));
+  S.materials.forEach(m=>{const st=matStatus(m);if(!st.need)return;const key=`po-${m.id}-${wk}`;if(decided.has(key))return;
+    const qty=Math.max(m.min_order||0,Math.ceil(Math.max(0,st.wk*4-(m.on_hand||0)-st.oo)/50)*50);
+    out.push({key,sev:'bad',title:`Buy ${m.name}`,why:`${N(m.on_hand)} ${m.uom} on hand covers ${st.cover==null?'unknown':N(st.cover,0)} days of planned use; supplier lead time is ${m.lead_days||'?'} days. Draft ${N(qty)} ${m.uom} from ${nm('suppliers',m.supplier_id)} (about ${M(qty*(m.cost||0))}).`,
+      act:'Create draft PO',run:async()=>{await save('pos',{po_no:nextNo('pos','po_no','PO-',1001),supplier_id:m.supplier_id||'',status:'Draft',eta:iso(addDays(todayD(),m.lead_days||7)),lines:[{material_id:m.id,qty}]});}});});
+  const rows=plan();
+  S.workcenters.forEach(w=>{const over=rows.slice(0,8).filter(r=>{const u=util(r,w.id);return u&&u.u>1.0});if(!over.length)return;
+    const r0=over[0],key=`cap-${w.id}-${r0.k}`;if(decided.has(key))return;
+    const peak=Math.max(...over.map(r=>util(r,w.id).u));const hrs=over.reduce((s,r)=>{const u=util(r,w.id);return s+(u.booked+u.unbooked-u.cap)},0);
+    out.push({key,sev:'warn',title:`${w.name} over capacity from ${fmtD(r0.ws)}`,why:`${over.length} week${over.length>1?'s':''} above 100%, peaking at ${pct(peak)}; ${N(hrs,0)} machine hours too many in total. Options: add a weekend shift, move due dates, or subcontract.`,
+      act:'Create planning task',run:async()=>{await save('tasks',{title:`Resolve overload on ${w.name} from ${fmtD(r0.ws)} (${N(hrs,0)} h over across ${over.length} wk)`,due:iso(todayD()),owner:'',priority:'high',status:'open',related:w.name})}});});
+  S.orders.filter(o=>o.status==='Quote').forEach(o=>{const age=Math.floor((todayD()-parseD(o.order_date))/DAY);if(age<c.quote_days)return;const key=`quote-${o.id}`;if(decided.has(key))return;
+    out.push({key,sev:'info',title:`Follow up quote ${o.order_no||''} for ${nm('accounts',o.account_id)}`,why:`Quote is ${age} days old and still open (${M(orderTotal(o))}).`,act:'Create follow-up task',run:async()=>{await save('tasks',{title:`Follow up on quote ${o.order_no} with ${nm('accounts',o.account_id)}`,due:iso(addDays(todayD(),2)),priority:'normal',status:'open',related:o.order_no})}});});
+  S.accounts.filter(a=>a.status==='active').forEach(a=>{const last=S.activities.filter(v=>v.account_id===a.id).map(v=>v.date).sort().pop();const age=last?Math.floor((todayD()-parseD(last))/DAY):999;if(age<c.dormant_days)return;const key=`dormant-${a.id}-${wk}`;if(decided.has(key))return;
+    out.push({key,sev:'info',title:`${a.name} has gone quiet`,why:last?`Last logged contact was ${age} days ago.`:'No contact logged yet.',act:'Create check-in task',run:async()=>{await save('tasks',{title:`Check in with ${a.name}`,due:iso(addDays(todayD(),3)),priority:'normal',status:'open',related:a.name})}});});
+  return out;
+}
+let RECMAP={};
+async function decide(key,status){await DB.collection('decisions').doc(uid('x')).set({key,status,ts:new Date().toISOString()})}
+
+/* ============ tables ============ */
+const orderTotal=o=>(o.lines||[]).reduce((s,l)=>s+(+l.qty_k||0)*(+l.price_k||0),0);
+const OSTAT={Quote:'',Confirmed:'info','In production':'info',Shipped:'good',Invoiced:'warn',Paid:'good',Cancelled:'bad'};
+const ASTAT={prospect:'',onboarding:'info',active:'good',paused:'warn',churned:'bad'};
+const dueClass=d=>{const x=parseD(d);if(!x)return '';return x<todayD()?'bad':(x-todayD())/DAY<=3?'warn':''};
+const COLS={
+ accounts:[{l:'Company',f:r=>`<b>${esc(r.name)}</b>`,s:r=>r.name},{l:'Status',f:r=>pill(r.status,ASTAT[r.status]),s:r=>r.status},{l:'Segment',f:r=>esc(r.segment||'–'),s:r=>r.segment},{l:'Location',f:r=>esc([r.city,r.country].filter(Boolean).join(', ')||'–'),s:r=>r.city},{l:'Product',f:r=>esc(nm('products',r.product_id,'sku')),s:r=>nm('products',r.product_id,'sku')},{l:'Volume k/wk',f:r=>`<span class="num">${N(r.launch_k_week)}</span>`,s:r=>r.launch_k_week||0,r:1},{l:'Owner',f:r=>esc(r.owner||'–'),s:r=>r.owner}],
+ orders:[{l:'Number',f:r=>`<span class="mono">${esc(r.order_no||'–')}</span>`,s:r=>r.order_no},{l:'Customer',f:r=>esc(nm('accounts',r.account_id)),s:r=>nm('accounts',r.account_id)},{l:'Status',f:r=>pill(r.status,OSTAT[r.status]),s:r=>ORDER_FLOW.indexOf(r.status)},{l:'Due',f:r=>`<span class="${dueClass(r.due_date)&&OPEN_ORD(r)?'pill '+dueClass(r.due_date):''}">${fmtD(r.due_date)}</span>`,s:r=>r.due_date},{l:'Qty (k)',f:r=>`<span class="num">${N((r.lines||[]).reduce((s,l)=>s+(+l.qty_k||0),0),1)}</span>`,s:r=>(r.lines||[]).reduce((s,l)=>s+(+l.qty_k||0),0),r:1},{l:'Value',f:r=>`<span class="num">${M(orderTotal(r))}</span>`,s:orderTotal,r:1}],
+ products:[{l:'SKU',f:r=>`<span class="mono">${esc(r.sku)}</span>`,s:r=>r.sku},{l:'Product',f:r=>`<b>${esc(r.name)}</b>`,s:r=>r.name},{l:'Category',f:r=>esc(r.category||'–'),s:r=>r.category},{l:'Price / k',f:r=>`<span class="num">${M(r.price_k,2)}</span>`,s:r=>r.price_k,r:1},{l:'Cost / k',f:r=>`<span class="num">${M(productCost(r),2)}</span>`,s:productCost,r:1},{l:'Margin',f:r=>{const m=r.price_k?(r.price_k-productCost(r))/r.price_k:null;return pill(pct(m),m==null?'':m<.2?'bad':m<.3?'warn':'good')},s:r=>r.price_k?(r.price_k-productCost(r))/r.price_k:0,r:1},{l:'Made on',f:r=>esc(nm('workcenters',r.wc_id)),s:r=>nm('workcenters',r.wc_id)},{l:'Rate pcs/h',f:r=>`<span class="num">${N(r.rate_hr)}</span>`,s:r=>r.rate_hr,r:1}],
+ materials:[{l:'Material',f:r=>`<b>${esc(r.name)}</b>`,s:r=>r.name},{l:'On hand',f:r=>`<span class="num">${N(r.on_hand)} ${esc(r.uom)}</span>`,s:r=>r.on_hand,r:1},{l:'Reorder pt',f:r=>`<span class="num">${N(r.reorder_point)}</span>`,s:r=>r.reorder_point,r:1},{l:'Days of cover',f:r=>{const s=matStatus(r);return `<span class="num">${s.cover==null?'–':N(s.cover,0)}</span>`},s:r=>matStatus(r).cover||0,r:1},{l:'On order',f:r=>`<span class="num">${N(matStatus(r).oo)}</span>`,s:r=>matStatus(r).oo,r:1},{l:'Lead days',f:r=>`<span class="num">${N(r.lead_days)}</span>`,s:r=>r.lead_days,r:1},{l:'Supplier',f:r=>esc(nm('suppliers',r.supplier_id)),s:r=>nm('suppliers',r.supplier_id)},{l:'Status',f:r=>{const s=matStatus(r);return s.need?pill('Reorder now','bad'):s.flag?pill('On order','info'):pill('OK','good')},s:r=>matStatus(r).need?0:1}],
+ suppliers:[{l:'Supplier',f:r=>`<b>${esc(r.name)}</b>`,s:r=>r.name},{l:'Contact',f:r=>esc(r.contact||'–'),s:r=>r.contact},{l:'Email',f:r=>esc(r.email||'–'),s:r=>r.email},{l:'Lead days',f:r=>`<span class="num">${N(r.lead_days)}</span>`,s:r=>r.lead_days,r:1},{l:'Terms',f:r=>esc(r.terms||'–'),s:r=>r.terms}],
+ pos:[{l:'PO',f:r=>`<span class="mono">${esc(r.po_no||'–')}</span>`,s:r=>r.po_no},{l:'Supplier',f:r=>esc(nm('suppliers',r.supplier_id)),s:r=>nm('suppliers',r.supplier_id)},{l:'Status',f:r=>pill(r.status,{Draft:'',Sent:'info',Received:'good',Cancelled:'bad'}[r.status]),s:r=>r.status},{l:'ETA',f:r=>fmtD(r.eta),s:r=>r.eta},{l:'Lines',f:r=>esc((r.lines||[]).map(l=>`${nm('materials',l.material_id)} × ${N(l.qty)}`).join('; ')),s:r=>(r.lines||[]).length},{l:'Value',f:r=>`<span class="num">${M((r.lines||[]).reduce((s,l)=>s+(+l.qty||0)*((get('materials',l.material_id)||{}).cost||0),0))}</span>`,s:r=>0,r:1}],
+ workorders:[{l:'WO',f:r=>`<span class="mono">${esc(r.wo_no||'–')}</span>`,s:r=>r.wo_no},{l:'Order',f:r=>esc(nm('orders',r.order_id,'order_no')),s:r=>nm('orders',r.order_id,'order_no')},{l:'Product',f:r=>esc(nm('products',r.product_id,'sku')),s:r=>nm('products',r.product_id,'sku')},{l:'Qty (k)',f:r=>`<span class="num">${N(r.qty_k,1)}</span>`,s:r=>r.qty_k,r:1},{l:'Work center',f:r=>esc(nm('workcenters',r.wc_id)),s:r=>nm('workcenters',r.wc_id)},{l:'Week of',f:r=>fmtD(r.week_start),s:r=>r.week_start},{l:'Status',f:r=>pill(r.status,{Planned:'',Running:'info',Done:'good'}[r.status]),s:r=>r.status},{l:'',f:r=>r.status==='Planned'?`<button class="btn sm" data-act="wo-start" data-id="${r.id}">Start</button>`:r.status==='Running'?`<button class="btn sm pri" data-act="wo-done" data-id="${r.id}">Complete</button>`:'',s:()=>0}],
+ workcenters:[{l:'Work center',f:r=>`<b>${esc(r.name)}</b>`,s:r=>r.name},{l:'Kind',f:r=>esc(r.kind||'–'),s:r=>r.kind},{l:'Hours / week',f:r=>`<span class="num">${N(r.hours_week)}</span>`,s:r=>r.hours_week,r:1},{l:'OEE',f:r=>`<span class="num">${N(r.oee)}%</span>`,s:r=>r.oee,r:1},{l:'Usable h/wk',f:r=>`<span class="num">${N(wcCap(r),1)}</span>`,s:wcCap,r:1}],
+ tasks:[{l:'',f:r=>`<input type="checkbox" aria-label="Done" data-act="task-toggle" data-id="${r.id}" ${r.status==='done'?'checked':''}>`,s:r=>r.status},{l:'Task',f:r=>`<span style="${r.status==='done'?'text-decoration:line-through;color:var(--muted)':''}">${esc(r.title)}</span>`,s:r=>r.title,wrap:1},{l:'Due',f:r=>r.due?`<span class="pill ${r.status==='done'?'':dueClass(r.due)}">${fmtD(r.due)}</span>`:'–',s:r=>r.due},{l:'Priority',f:r=>pill(r.priority,{high:'bad',normal:'',low:''}[r.priority]),s:r=>r.priority},{l:'Owner',f:r=>esc(r.owner||'–'),s:r=>r.owner},{l:'Related',f:r=>esc(r.related||'–'),s:r=>r.related}]
+};
+const SEARCH_KEYS={accounts:['name','segment','industry','city','owner'],orders:['order_no'],products:['sku','name','category'],materials:['name'],suppliers:['name','contact'],pos:['po_no'],workorders:['wo_no'],tasks:['title','owner','related'],workcenters:['name']};
+const ST={q:{},sort:{},lim:{},filter:{},tab:{}};
+function tableHTML(coll,rows,{click=true,cols=COLS[coll],empty='Nothing here yet.',dblAdd=true}={}){
+  const q=(ST.q[coll]||'').toLowerCase();
+  if(q){const keys=SEARCH_KEYS[coll]||[];rows=rows.filter(r=>keys.some(k=>String(r[k]||'').toLowerCase().includes(q))||(coll==='orders'&&nm('accounts',r.account_id).toLowerCase().includes(q)))}
+  const so=ST.sort[coll];
+  if(so){const col=cols[so.i];if(col&&col.s){rows=[...rows].sort((a,b)=>{const x=col.s(a),y=col.s(b);const r=(typeof x==='number'&&typeof y==='number')?x-y:String(x==null?'':x).localeCompare(String(y==null?'':y));return so.d*r})}}
+  const lim=ST.lim[coll]||100;const shown=rows.slice(0,lim);
+  if(!rows.length)return `<div class="empty">${esc(q?'No matches for “'+q+'”.':empty)}</div>`;
+  return `<div class="tbl"><table><thead><tr>${cols.map((c,i)=>`<th class="${c.r?'r':''} ${c.s&&c.l?'sort':''}" ${c.s&&c.l?`data-act="sort" data-c="${coll}" data-i="${i}"`:''}>${esc(c.l)}${so&&so.i===i?(so.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${shown.map(r=>`<tr ${click?`data-act="${coll==='accounts'?'open-account':'edit'}" data-c="${coll}" data-id="${r.id}"`:''}>${cols.map(c=>`<td class="${c.r?'r':''} ${c.wrap?'wrap':''}">${c.f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length>lim?`<div class="row" style="margin-top:8px"><span class="muted small">Showing ${lim} of ${rows.length}</span><button class="btn sm" data-act="more" data-c="${coll}">Show 100 more</button></div>`:''}`;
+}
+function toolbar(coll,{filters='',add=true,addLabel,extra=''}={}){
+  return `<div class="tools"><input type="search" id="q-${coll}" placeholder="Search" aria-label="Search" value="${esc(ST.q[coll]||'')}" data-q="${coll}">${filters}${extra}<span style="flex:1"></span>${add?`<button class="btn pri" data-act="new" data-c="${coll}">+ ${esc(addLabel||SCHEMA[coll].label)}</button>`:''}</div>`;
+}
+
+/* ============ charts ============ */
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
+function capChart(rows,wcid){ // stacked hours vs capacity for work center (or all)
+  const data=rows.map(r=>{let b=0,u=0,cap=0;S.workcenters.forEach(w=>{if(wcid&&wcid!==w.id)return;const x=util(r,w.id);if(x){b+=x.booked;u+=x.unbooked;cap+=x.cap}});return {r,b,u,cap}});
+  const W=720,H=240,L=44,R=10,T=14,B=30;const mx=niceMax(Math.max(...data.map(d=>Math.max(d.b+d.u,d.cap)),1)*1.08);
+  const bw=(W-L-R)/data.length;const y=v=>T+(H-T-B)*(1-v/mx);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Hours required against capacity by week">`;
+  for(let i=0;i<=4;i++){const v=mx*i/4;s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+3}" text-anchor="end">${N(v)}</text>`}
+  data.forEach((d,i)=>{const x=L+i*bw+bw*.18,w=bw*.64;const over=(d.b+d.u)>d.cap&&d.cap>0;
+    s+=`<g><title>Week of ${fmtD(d.r.ws)}: ${N(d.b,0)} h booked + ${N(d.u,0)} h forecast vs ${N(d.cap,0)} h capacity (${d.cap?pct((d.b+d.u)/d.cap):'–'})</title>`;
+    s+=`<rect x="${x}" y="${y(d.b)}" width="${w}" height="${y(0)-y(d.b)}" fill="var(--accent)" rx="1"/>`;
+    s+=`<rect x="${x}" y="${y(d.b+d.u)}" width="${w}" height="${y(d.b)-y(d.b+d.u)}" fill="var(--accent2)" rx="1"/>`;
+    if(over)s+=`<text x="${x+w/2}" y="${y(d.b+d.u)-4}" text-anchor="middle" style="fill:var(--bad);font-weight:600">${pct((d.b+d.u)/d.cap)}</text>`;
+    s+=`<text x="${x+w/2}" y="${H-B+13}" text-anchor="middle">${fmtD(d.r.ws)}</text></g>`;});
+  let pth='';data.forEach((d,i)=>{const x1=L+i*bw,x2=x1+bw;pth+=(i?' L':'M')+x1+' '+y(d.cap)+' L'+x2+' '+y(d.cap)});
+  s+=`<path class="capl" d="${pth}"/></svg>`;
+  return `<div class="chartwrap">${s}</div><div class="legend"><span><i style="background:var(--accent)"></i>Booked orders</span><span><i style="background:var(--accent2)"></i>Forecast not yet ordered</span><span><i style="border-top:2px dashed var(--fg);height:0;border-radius:0;width:14px;vertical-align:3px"></i>Usable capacity (hours per week)</span></div>`;
+}
+function lineChart(acc,fut){
+  const pts=[...acc.series.map(s=>({ws:s.ws,a:s.act,f:s.f})),...fut];const W=720,H=230,L=44,R=10,T=14,B=30;
+  const mx=niceMax(Math.max(...pts.map(p=>Math.max(p.a||0,p.f||0)),1)*1.08);const bw=(W-L-R)/pts.length;const x=i=>L+i*bw+bw/2,y=v=>T+(H-T-B)*(1-v/mx);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Forecast against actual shipped volume by week">`;
+  for(let i=0;i<=4;i++){const v=mx*i/4;s+=`<line class="ax" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+3}" text-anchor="end">${N(v)}</text>`}
+  const ti=acc.series.length;s+=`<line x1="${L+ti*bw}" x2="${L+ti*bw}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${L+ti*bw+4}" y="${T+8}">today</text>`;
+  const path=(key,from,to)=>{let p='',first=true;for(let i=from;i<to;i++){if(pts[i][key]==null)continue;p+=(first?'M':' L')+x(i)+' '+y(pts[i][key]);first=false}return p};
+  s+=`<path d="${path('f',0,pts.length)}" fill="none" stroke="var(--accent2)" stroke-width="2.5"/>`;
+  s+=`<path d="${path('a',0,ti)}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
+  pts.forEach((p,i)=>{if(p.a!=null&&i<ti)s+=`<circle cx="${x(i)}" cy="${y(p.a)}" r="3" fill="var(--fg)"><title>${fmtD(p.ws)} actual ${N(p.a,0)}k, forecast ${N(p.f,0)}k</title></circle>`;if(i%2===0||i===pts.length-1)s+=`<text x="${x(i)}" y="${H-B+13}" text-anchor="middle">${fmtD(p.ws)}</text>`});
+  s+='</svg>';
+  return `<div class="chartwrap">${s}</div><div class="legend"><span><i style="background:var(--fg)"></i>Actual shipped (k pcs)</span><span><i style="background:var(--accent2)"></i>Forecast (k pcs)</span></div>`;
+}
+
+/* ============ views ============ */
+const NAV=[['dashboard','Dashboard'],['accounts','Accounts'],['pipeline','Pipeline'],['orders','Orders'],['products','Products'],['inventory','Inventory'],['purchasing','Purchasing'],['production','Production'],['demand','Demand'],['tasks','Tasks'],['data','Data & settings']];
+let VIEW={name:'dashboard',id:null};
+function parseHash(){const h=location.hash.replace('#','');if(!h)return {name:'dashboard'};const i=h.indexOf('-');if(i>0&&h.slice(0,i)==='account')return {name:'account',id:h.slice(i+1)};return {name:NAV.some(n=>n[0]===h)?h:'dashboard'}}
+window.addEventListener('hashchange',()=>{VIEW=parseHash();render();window.scrollTo(0,0)});
+function renderNav(badges){
+  const items=NAV.map(([k,l])=>{const cur=VIEW.name===k||(VIEW.name==='account'&&k==='accounts');const b=badges[k];return `<a href="#${k}" ${cur?'aria-current="page"':''}>${l}${b?`<span class="badge">${b}</span>`:''}</a>`});
+  $('#nav').innerHTML=`<div class="brand"><b>${esc(cfg().company)}</b><span>Plantline Ops</span></div>`+items.slice(0,10).join('')+'<div class="sep"></div>'+items[10];
+}
+function header(t,sub,right=''){return `<div class="top"><div><h1>${esc(t)}</h1>${sub?`<p>${sub}</p>`:''}</div><div class="row">${right}</div></div>`}
+const lastUpdate=()=>{let m='';COLLS.forEach(c=>{if(c==='changelog'||c==='decisions')return;S[c].forEach(r=>{if(r.updated_at&&r.updated_at>m)m=r.updated_at})});return m};
+const stamp=()=>{const m=lastUpdate();return m?`Data last updated ${new Date(m).toLocaleString()}`:'No data yet'};
+function exampleBanner(){
+  return `<div class="banner info"><span>Public demo. Every record is made-up example data (a paper cup, bowl and plate plant). Edits stay in this tab and reset when you reload.</span><button class="btn sm" onclick="location.reload()">Reset demo</button></div>`;
+}
+function vDashboard(){
+  const c=cfg(),rows=plan();const openPipe=S.deals.filter(d=>!['Won','Lost'].includes(d.stage));
+  const wpipe=openPipe.reduce((s,d)=>s+(dealValue(d))*(PROB[d.stage]||0),0);
+  const backlog=S.orders.filter(OPEN_ORD).reduce((s,o)=>s+orderTotal(o),0);
+  const quotes=S.orders.filter(o=>o.status==='Quote');
+  let peak=0,peakWc='',peakWk=null;S.workcenters.forEach(w=>rows.slice(0,4).forEach(r=>{const u=util(r,w.id);if(u&&u.u>peak){peak=u.u;peakWc=w.name;peakWk=r.ws}}));
+  const low=S.materials.filter(m=>matStatus(m).need).length;const acc=accuracy();
+  const R=recs();RECMAP={};R.forEach(r=>RECMAP[r.key]=r);
+  const stageBars=STAGES.slice(0,5).map(s=>{const v=S.deals.filter(d=>d.stage===s).reduce((a,d)=>a+dealValue(d),0);return {s,v,n:S.deals.filter(d=>d.stage===s).length}});const mxv=Math.max(...stageBars.map(b=>b.v),1);
+  const myTasks=S.tasks.filter(t=>t.status!=='done').sort((a,b)=>String(a.due||'9').localeCompare(String(b.due||'9'))).slice(0,6);
+  const recent=[...S.changelog].sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,6);
+  return header('Dashboard',`${esc(stamp())}`)+exampleBanner()+`
+  <div class="grid kpis">
+   <div class="kpi"><div class="l">Weighted pipeline / month</div><div class="v">${M(wpipe)}</div><div class="s">${openPipe.length} open deals</div></div>
+   <div class="kpi"><div class="l">Order backlog</div><div class="v">${M(backlog)}</div><div class="s">${S.orders.filter(OPEN_ORD).length} confirmed or in production</div></div>
+   <div class="kpi"><div class="l">Peak load, next 4 weeks</div><div class="v" style="color:var(--${peak>1?'bad':peak>.9?'warn':'fg'})">${S.workcenters.length?pct(peak):'–'}</div><div class="s">${peakWc?esc(peakWc)+', week of '+fmtD(peakWk):'Add a work center'}</div></div>
+   <div class="kpi"><div class="l">Materials to reorder</div><div class="v" style="color:var(--${low?'bad':'fg'})">${low}</div><div class="s">of ${S.materials.length} tracked</div></div>
+   <div class="kpi"><div class="l">Open quotes</div><div class="v">${quotes.length}</div><div class="s">${M(quotes.reduce((s,o)=>s+orderTotal(o),0))}</div></div>
+   <div class="kpi"><div class="l">Forecast error (WAPE), 6 wks</div><div class="v">${acc.wape==null?'–':pct(acc.wape,1)}</div><div class="s">bias ${acc.bias==null?'–':(acc.bias>0?'+':'')+pct(acc.bias,1)}</div></div>
+  </div>
+  <div class="grid cols2">
+   <div class="card"><div class="hd"><h2>Needs your decision</h2><span class="muted small">${R.length} proposal${R.length===1?'':'s'}</span></div>
+    ${R.length?R.slice(0,6).map(r=>`<div class="rec"><div><div class="t">${pill(r.sev==='bad'?'Urgent':r.sev==='warn'?'Plan':'Follow up',r.sev)} ${esc(r.title)}</div><div class="w">${esc(r.why)}</div></div><div class="row" style="align-self:center"><button class="btn sm pri" data-act="rec-ok" data-key="${esc(r.key)}">${esc(r.act)}</button><button class="btn sm" data-act="rec-no" data-key="${esc(r.key)}">Dismiss</button></div></div>`).join(''):`<div class="empty">Nothing needs a decision. Plantline checks stock cover, capacity, open quotes and quiet accounts.</div>`}
+   </div>
+   <div class="card"><div class="hd"><h2>Load on all work centers</h2><a href="#production" class="small">Details</a></div>${S.workcenters.length?capChart(rows,''):'<div class="empty">Add a work center to see capacity.</div>'}</div>
+   <div class="card"><div class="hd"><h2>Pipeline by stage</h2><a href="#pipeline" class="small">Open board</a></div>
+    ${stageBars.map(b=>`<div style="display:grid;grid-template-columns:96px minmax(0,1fr) 90px;gap:8px;align-items:center;margin:6px 0"><span class="muted">${b.s}</span><div style="background:var(--surface2);border-radius:3px;height:14px"><div style="width:${b.v/mxv*100}%;height:100%;background:var(--accent);border-radius:3px"></div></div><span class="num r" style="text-align:right">${M(b.v)}</span></div>`).join('')}
+   </div>
+   <div class="card"><div class="hd"><h2>Open tasks</h2><a href="#tasks" class="small">All tasks</a></div>
+    ${myTasks.length?`<div class="tbl">${'<table><tbody>'+myTasks.map(t=>`<tr><td class="wrap">${esc(t.title)}</td><td>${t.due?`<span class="pill ${dueClass(t.due)}">${fmtD(t.due)}</span>`:''}</td></tr>`).join('')+'</tbody></table>'}</div>`:'<div class="empty">No open tasks.</div>'}
+    <div class="hd" style="margin-top:14px"><h2>Recent changes</h2><a href="#data" class="small">Change log</a></div>
+    ${recent.length?recent.map(r=>`<div class="small" style="padding:3px 0;border-bottom:1px solid var(--line)"><span class="muted">${new Date(r.ts).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span> ${esc(r.coll)} <b>${esc(r.label||r.rec)}</b> ${esc(r.field)} ${r.old||r.new?`<span class="muted">${esc(r.old)} → ${esc(r.new)}</span>`:''}</div>`).join(''):'<div class="muted small">Edits you make are logged here with who, when and old → new.</div>'}
+   </div>
+  </div>`;
+}
+const dealValue=d=>d.value!=null&&d.value!==''?+d.value:((+d.qty_k_month||0)*((get('products',d.product_id)||{}).price_k||0));
+
+function vAccounts(){
+  const st=ST.filter.accounts||'';
+  const filters=`<select id="f-accounts" data-f="accounts" aria-label="Filter status"><option value="">All statuses</option>${SCHEMA.accounts.fields[1].o.map(o=>`<option ${st===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  return header('Accounts',`Customers, prospects and distributors. ${S.accounts.length} total.`)+exampleBanner()+toolbar('accounts',{filters,addLabel:'Account'})+`<div id="tbl">${tableHTML('accounts',S.accounts.filter(a=>!st||a.status===st),{empty:'No accounts yet. Add your first prospect, or import a CSV from Data & settings.'})}</div>`;
+}
+function vAccount(id){
+  const a=get('accounts',id);if(!a)return header('Account not found')+`<a href="#accounts">Back to accounts</a>`;
+  const tab=ST.tab.account||'overview';const tabs=['overview','contacts','activity','deals','orders','demand','research'];
+  const body={
+   overview:()=>`<div class="grid cols2"><div class="card"><div class="hd"><h2>Profile</h2><button class="btn sm" data-act="edit" data-c="accounts" data-id="${a.id}">Edit</button></div><dl class="dl">${[['Status',pill(a.status,ASTAT[a.status])],['Segment',esc(a.segment||'–')],['Industry',esc(a.industry||'–')],['Location',esc([a.city,a.country].filter(Boolean).join(', ')||'–')],['Owner',esc(a.owner||'–')],['Primary product',esc(nm('products',a.product_id))],['Launch',fmtDY(a.launch_date)],['Steady state',`<span class="num">${N(a.launch_k_week)} k pcs / week</span>`],['Ramp %',`<span class="num">${esc((a.ramp_pct||[]).join(' · ')||'segment default')}</span>`],['In forecast',a.include?'Yes':'No'],['Notes',esc(a.notes||'–')]].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></div>
+     <div class="card"><h2>Next 12 weeks</h2>${miniFc(a)}</div></div>`,
+   contacts:()=>`<div class="tools"><span style="flex:1"></span><button class="btn pri" data-act="new" data-c="contacts" data-pre="account_id=${a.id}">+ Contact</button></div>${S.contacts.filter(x=>x.account_id===a.id).length?`<div class="tbl"><table><thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr></thead><tbody>${S.contacts.filter(x=>x.account_id===a.id).map(x=>`<tr data-act="edit" data-c="contacts" data-id="${x.id}"><td><b>${esc(x.name)}</b></td><td>${esc(x.role||'')}</td><td>${esc(x.email||'')}</td><td>${esc(x.phone||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No contacts yet.</div>'}`,
+   activity:()=>{const rows=S.activities.filter(x=>x.account_id===a.id).sort((p,q)=>q.date.localeCompare(p.date));return `<div class="tools"><span style="flex:1"></span><button class="btn pri" data-act="new" data-c="activities" data-pre="account_id=${a.id}">+ Log activity</button></div>${rows.length?rows.map(x=>`<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="edit" data-c="activities" data-id="${x.id}"><div class="hd"><span>${pill(x.type,'info')} <span class="muted small">${fmtDY(x.date)}</span></span></div><div style="margin-top:6px">${esc(x.text)}</div></div>`).join(''):'<div class="empty">Nothing logged yet.</div>'}`},
+   deals:()=>{const rows=S.deals.filter(x=>x.account_id===a.id);return `<div class="tools"><span style="flex:1"></span><button class="btn pri" data-act="new" data-c="deals" data-pre="account_id=${a.id}">+ Deal</button></div>${rows.length?`<div class="tbl"><table><thead><tr><th>Deal</th><th>Stage</th><th class="r">Monthly value</th><th>Close</th></tr></thead><tbody>${rows.map(x=>`<tr data-act="edit" data-c="deals" data-id="${x.id}"><td><b>${esc(x.title)}</b></td><td>${pill(x.stage,x.stage==='Won'?'good':x.stage==='Lost'?'bad':'info')}</td><td class="r num">${M(dealValue(x))}</td><td>${fmtD(x.close_date)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No deals.</div>'}`},
+   orders:()=>{const rows=S.orders.filter(x=>x.account_id===a.id).sort((p,q)=>String(q.due_date).localeCompare(String(p.due_date)));return `<div class="tools"><span style="flex:1"></span><button class="btn pri" data-act="new" data-c="orders" data-pre="account_id=${a.id}">+ Quote / order</button></div>${tableHTML('orders',rows,{cols:COLS.orders.filter(c=>c.l!=='Customer'),empty:'No quotes or orders yet.'})}`},
+   demand:()=>`<div class="card">${miniFc(a)}<p class="muted small" style="margin-bottom:0">forecast = steady-state volume × ramp(week since launch) × season(month). After week 6 the ramp is 100%. Change inputs on the profile; the model never edits them for you.</p></div>`,
+   research:()=>researchHTML(a)
+  }[tab]();
+  return `<div class="top"><div><a href="#accounts" class="small">← Accounts</a><h1>${esc(a.name)}</h1><p>${pill(a.status,ASTAT[a.status])} ${esc(a.segment||'')} ${a.city?' · '+esc(a.city):''}</p></div></div>
+  <div class="tabs" role="tablist">${tabs.map(t=>`<button role="tab" aria-selected="${t===tab}" data-act="tab" data-k="account" data-v="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${body}`;
+}
+function miniFc(a){
+  const c=cfg(),ws=planWeeks(12);const vals=ws.map(w=>fcK(a,w,c));const mx=Math.max(...vals,1);
+  if(!a.include)return '<div class="empty">This account is not included in the forecast. Turn on “Include in demand forecast” on the profile.</div>';
+  return `<div style="display:flex;align-items:flex-end;gap:4px;height:110px">${vals.map((v,i)=>`<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px" title="Week of ${fmtD(ws[i])}: ${N(v,1)}k"><span class="small mono" style="font-size:10px">${N(v,0)}</span><div style="width:100%;height:${Math.max(2,v/mx*80)}px;background:var(--accent);border-radius:2px"></div></div>`).join('')}</div><div class="row small muted" style="justify-content:space-between;margin-top:4px"><span>${fmtD(ws[0])}</span><span>k pcs per week</span><span>${fmtD(ws[11])}</span></div>`;
+}
+const RS={};
+function researchHTML(a){
+  const r=a.research,p=RS[a.id];
+  let h=`<div class="grid cols2"><div class="card"><div class="hd"><h2>Approved research</h2></div>`;
+  if(r)h+=`<dl class="dl"><dt>Approved</dt><dd>${fmtDY(r.approved_at)}</dd><dt>Growth signal</dt><dd>${esc(r.growth_signal)}</dd><dt>Peak months</dt><dd>${esc((r.peak_months||[]).join(', ')||'unknown')}</dd><dt>Confidence</dt><dd>${esc(r.confidence)}</dd><dt>Risks</dt><dd>${esc((r.risks||[]).join('; ')||'none noted')}</dd><dt>Sources</dt><dd>${(r.sources||[]).map(s=>esc(s.title||s.url)).join('<br>')||'none given'}</dd><dt>In forecast</dt><dd>${a.season_override?'Seasonality override is active':'Not applied'}</dd></dl>`;
+  else h+='<div class="empty">No approved research yet.</div>';
+  h+=`</div><div class="card"><div class="hd"><h2>Ask Claude</h2><button class="btn pri" data-act="research" data-id="${a.id}" ${p&&p.busy?'disabled':''}>${p&&p.busy?'Researching…':'Research this customer'}</button></div><p class="muted small">Claude proposes seasonality and risks from what it knows about the company. It does not browse. Treat everything as unverified until you approve it. Unknown stays unknown.</p>`;
+  if(p&&p.err)h+=`<div class="errs">${esc(p.err)}</div>`;
+  if(p&&p.res){const x=p.res;h+=`<pre class="json">${esc(JSON.stringify(x,null,1))}</pre>${x.seasonality?`<label class="small" style="display:flex;gap:6px;margin-top:8px"><input type="checkbox" id="use-seas"> Use this seasonality in ${esc(a.name)}'s forecast</label>`:''}<div class="row" style="margin-top:8px"><button class="btn pri" data-act="research-ok" data-id="${a.id}">Approve and save</button><button class="btn" data-act="research-no" data-id="${a.id}">Discard</button></div>`}
+  return h+'</div></div>';
+}
+async function doResearch(id){
+  const a=get('accounts',id);RS[id]={busy:true};render();
+  try{
+    throw {message:'AI research is switched off in the public demo.'};
+    const prompt=`You are helping a paper-products manufacturer (cups, bowls, plates) plan demand for one B2B customer.\nCustomer: ${a.name}\nSegment: ${a.segment||'unknown'}\nIndustry: ${a.industry||'unknown'}\nLocation: ${[a.city,a.country].filter(Boolean).join(', ')||'unknown'}\n\nRules: use only general public knowledge about this kind of business. Do not guess. If you do not know something, use "unknown" (or null for seasonality). Never invent sources; leave sources empty if you cannot name a real one.\nReturn ONLY JSON in exactly this shape:\n{"seasonality":[12 numbers for Jan..Dec where 1.0 is an average month, or null],"peak_months":["Jan",...],"growth_signal":"up|flat|down|unknown","risks":["short strings"],"confidence":"low|medium|high","sources":[{"title":"","url":""}]}`;
+    const res=await sample.json(prompt,{modelTier:'quick',cache:false});
+    const out={seasonality:Array.isArray(res.seasonality)&&res.seasonality.length===12&&res.seasonality.every(v=>typeof v==='number'&&v>.3&&v<2.5)?res.seasonality:null,peak_months:Array.isArray(res.peak_months)?res.peak_months.slice(0,6).map(String):[],growth_signal:['up','flat','down'].includes(res.growth_signal)?res.growth_signal:'unknown',risks:Array.isArray(res.risks)?res.risks.slice(0,6).map(s=>String(s).slice(0,160)):[],confidence:['low','medium','high'].includes(res.confidence)?res.confidence:'low',sources:Array.isArray(res.sources)?res.sources.filter(s=>s&&s.url&&/^https?:\/\//.test(s.url)).slice(0,5).map(s=>({title:String(s.title||'').slice(0,120),url:String(s.url).slice(0,300)})):[]};
+    RS[id]={res:out};
+  }catch(e){RS[id]={err:(e&&e.message)||'Research failed. Try again.'}}
+  render();
+}
+async function approveResearch(id){
+  const p=RS[id];if(!p||!p.res)return;const use=$('#use-seas')&&$('#use-seas').checked;const a=get('accounts',id);
+  const nu={...a,research:{...p.res,approved_at:iso(todayD())}};
+  if(use&&p.res.seasonality)nu.season_override=p.res.seasonality;
+  await save('accounts',nu,a,id);delete RS[id];toast('Research saved');
+}
+
+function vPipeline(){
+  const tot=S.deals.filter(d=>!['Won','Lost'].includes(d.stage)).reduce((s,d)=>s+dealValue(d),0);
+  return header('Pipeline',`Open value ${M(tot)} per month. Move a deal with its stage menu.`)+exampleBanner()+`<div class="tools"><span style="flex:1"></span><button class="btn pri" data-act="new" data-c="deals">+ Deal</button></div>
+  <div class="kanban">${STAGES.map(s=>{const ds=S.deals.filter(d=>d.stage===s);return `<div class="col"><div class="ch"><span>${s}</span><span class="muted num">${ds.length} · ${M(ds.reduce((a,d)=>a+dealValue(d),0))}</span></div>${ds.map(d=>`<div class="deal"><b data-act="edit" data-c="deals" data-id="${d.id}" style="cursor:pointer">${esc(d.title)}</b><span class="muted small">${esc(nm('accounts',d.account_id))}</span><span class="num">${M(dealValue(d))} / mo · ${N(d.qty_k_month)}k</span><span class="small muted">Close ${fmtD(d.close_date)}</span><div class="row"><select data-stage="${d.id}" aria-label="Stage">${STAGES.map(x=>`<option ${x===d.stage?'selected':''}>${x}</option>`).join('')}</select>${!['Won','Lost'].includes(d.stage)?`<button class="btn sm" data-act="deal-quote" data-id="${d.id}">Quote</button>`:''}</div></div>`).join('')||'<div class="muted small" style="padding:6px">No deals</div>'}</div>`}).join('')}</div>`;
+}
+function vOrders(){
+  const st=ST.filter.orders||'';
+  const filters=`<select id="f-orders" data-f="orders" aria-label="Filter status"><option value="">All statuses</option>${[...ORDER_FLOW,'Cancelled'].map(o=>`<option ${st===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const rows=S.orders.filter(o=>!st||o.status===st);
+  return header('Orders',`Quotes through payment. Open an order to edit lines or move it forward.`)+exampleBanner()+toolbar('orders',{filters,addLabel:'Quote / order'})+`<div id="tbl">${tableHTML('orders',[...rows].sort((a,b)=>String(b.due_date).localeCompare(String(a.due_date))),{empty:'No quotes or orders yet.'})}</div>`;
+}
+function orderModalExtra(o){
+  const i=ORDER_FLOW.indexOf(o.status);const nxt=['Confirm order','Release to production','Mark shipped','Mark invoiced','Mark paid'][i];
+  return nxt&&i>=0?`<button type="button" class="btn pri" data-act="order-next" data-id="${o.id}">${nxt}</button>`:'';
+}
+async function orderNext(id){
+  const o=get('orders',id),i=ORDER_FLOW.indexOf(o.status);const nxt=ORDER_FLOW[i+1];if(!nxt)return;
+  if(nxt==='In production'){
+    const exist=S.workorders.filter(w=>w.order_id===id).length;
+    if(!exist){const base=+nextNo('workorders','wo_no','',5001);let wi=0;for(const l of (o.lines||[])){const p=get('products',l.product_id);await save('workorders',{wo_no:'WO-'+(base+wi++),order_id:id,product_id:l.product_id,qty_k:+l.qty_k||0,wc_id:p&&p.wc_id||'',week_start:weekOf(o.due_date)||iso(monday(todayD())),status:'Planned',consumed:false})}}
+  }
+  await patch('orders',id,{status:nxt});
+  if(nxt==='Confirmed'){const a=get('accounts',o.account_id);if(a&&['prospect','onboarding'].includes(a.status)&&a.status==='prospect')await patch('accounts',a.id,{status:'onboarding'})}
+  closeModal();toast(`Order is now ${nxt}`);
+}
+async function woStart(id){await patch('workorders',id,{status:'Running'})}
+async function woDone(id){
+  const w=get('workorders',id);if(!w)return;const p=get('products',w.product_id);
+  if(!w.consumed&&p)for(const b of (p.bom||[])){const m=get('materials',b.material_id);if(m)await patch('materials',m.id,{on_hand:Math.max(0,Math.round(((m.on_hand||0)-(w.qty_k||0)*(b.qty_per_k||0))*10)/10)})}
+  await patch('workorders',id,{status:'Done',consumed:true});toast('Work order complete. Materials consumed from stock.');
+}
+
+function vProducts(){
+  const sk=S.workcenters.length;
+  return header('Products & BOM',`SKU, price, bill of materials and the machine that makes it. Unit cost = materials + conversion (${M(cfg().conv,2)} per 1,000 set in Data & settings).`)+exampleBanner()+toolbar('products',{addLabel:'Product'})+`<div id="tbl">${tableHTML('products',S.products,{empty:'Add your first product. Define price per 1,000 pieces, machine rate and bill of materials.'})}</div>`+(sk?'':`<div class="banner info" style="margin-top:12px">Add a work center under Production so products can be scheduled.</div>`);
+}
+function vInventory(){
+  const low=S.materials.filter(m=>matStatus(m).need);
+  return header('Inventory',`Raw materials and packaging. Cover uses planned use over the next 4 weeks (booked orders plus forecast).`)+exampleBanner()+(low.length?`<div class="banner"><span>${low.length} material${low.length>1?'s need':' needs'} a purchase decision.</span><a href="#dashboard">Review on dashboard</a></div>`:'')+toolbar('materials',{addLabel:'Material'})+`<div id="tbl">${tableHTML('materials',S.materials,{empty:'Add the materials you buy: board, film, ink, cartons.'})}</div>`;
+}
+function vPurchasing(){
+  const tab=ST.tab.purch||'pos';
+  return header('Purchasing','Suppliers and purchase orders. Receiving a PO adds stock.')+exampleBanner()+`<div class="tabs"><button aria-selected="${tab==='pos'}" data-act="tab" data-k="purch" data-v="pos">Purchase orders</button><button aria-selected="${tab==='sup'}" data-act="tab" data-k="purch" data-v="sup">Suppliers</button></div>`+
+   (tab==='pos'?toolbar('pos',{addLabel:'Purchase order'})+`<div id="tbl">${tableHTML('pos',[...S.pos].sort((a,b)=>String(b.po_no).localeCompare(String(a.po_no))),{empty:'No purchase orders yet.'})}</div>`:toolbar('suppliers',{addLabel:'Supplier'})+`<div id="tbl">${tableHTML('suppliers',S.suppliers,{empty:'No suppliers yet.'})}</div>`);
+}
+function poExtra(po){
+  if(po.status==='Draft')return `<button type="button" class="btn pri" data-act="po-send" data-id="${po.id}">Mark sent</button>`;
+  if(po.status==='Sent')return `<button type="button" class="btn pri" data-act="po-recv" data-id="${po.id}">Receive into stock</button>`;
+  return '';
+}
+function vProduction(){
+  const rows=plan();const sel=ST.filter.prodwc||'';
+  const wcOpts=`<select id="f-prodwc" data-f="prodwc" aria-label="Work center"><option value="">All work centers</option>${S.workcenters.map(w=>`<option value="${w.id}" ${sel===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`;
+  const heat=S.workcenters.length?`<div class="tbl heat"><table><thead><tr><th>Work center</th>${rows.map(r=>`<th class="r">${fmtD(r.ws)}</th>`).join('')}</tr></thead><tbody>${S.workcenters.map(w=>`<tr data-act="edit" data-c="workcenters" data-id="${w.id}"><td><b>${esc(w.name)}</b><div class="muted small">${N(wcCap(w),0)} h/wk usable</div></td>${rows.map(r=>{const u=util(r,w.id);if(!u)return '<td class="c">–</td>';const cl=u.u>1?'h3':u.u>.85?'h2':u.u>0?'h1':'h0';return `<td class="c ${cl}" title="${N(u.booked,0)} h booked + ${N(u.unbooked,0)} h forecast">${pct(u.u)}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Add a work center to see capacity.</div>';
+  const wos=S.workorders.filter(w=>w.status!=='Done'||true).sort((a,b)=>String(b.week_start).localeCompare(String(a.week_start)));
+  return header('Production',`Machine hours required against hours available, by week. Booked orders plus forecast demand that has not been ordered yet.`)+exampleBanner()+
+   `<div class="card" style="margin-bottom:12px"><div class="hd"><h2>Hours by week</h2><div class="row">${wcOpts}<button class="btn sm" data-act="new" data-c="workcenters">+ Work center</button></div></div>${S.workcenters.length?capChart(rows,sel):'<div class="empty">Add a work center, then assign products to it.</div>'}</div>
+   <h2 style="margin:16px 0 8px">Utilization heat map</h2>${heat}
+   <div class="hd" style="margin:16px 0 8px"><h2>Work orders</h2><button class="btn pri" data-act="new" data-c="workorders">+ Work order</button></div>
+   <div id="tbl">${tableHTML('workorders',wos,{empty:'No work orders. Release a confirmed order to production and they are created for you.'})}</div>`;
+}
+function vDemand(){
+  const c=cfg(),acc=accuracy();const fut=planWeeks(10).map(ws=>({ws,f:S.accounts.reduce((s,a)=>s+fcK(a,ws,c),0)}));
+  const segs=Object.entries(acc.seg).sort((a,b)=>b[1].ae-a[1].ae);
+  const accts=Object.entries(acc.per).filter(([id,x])=>x.a>0).map(([id,x])=>({a:get('accounts',id),w:x.ae/x.a,b:(x.f-x.a)/x.a,x})).sort((p,q)=>q.w-p.w).slice(0,8);
+  return header('Demand',`Forecast = steady-state volume × ramp × season, summed across accounts. Accuracy is measured against shipped orders.`)+exampleBanner()+
+   `<div class="grid kpis"><div class="kpi"><div class="l">WAPE, last 6 weeks</div><div class="v">${acc.wape==null?'–':pct(acc.wape,1)}</div><div class="s">Σ|actual − forecast| ÷ Σ actual</div></div><div class="kpi"><div class="l">Bias</div><div class="v">${acc.bias==null?'–':(acc.bias>0?'+':'')+pct(acc.bias,1)}</div><div class="s">${acc.bias==null?'':acc.bias>0?'Forecast runs high':'Forecast runs low'}</div></div><div class="kpi"><div class="l">Next 4 weeks</div><div class="v">${N(fut.slice(0,4).reduce((s,f)=>s+f.f,0),0)}k</div><div class="s">forecast pieces</div></div></div>
+   <div class="card" style="margin-bottom:12px"><h2>Forecast and actual shipped</h2>${acc.A||fut.some(f=>f.f)?lineChart(acc,fut):'<div class="empty">Include accounts in the forecast to see demand.</div>'}</div>
+   <div class="grid cols2"><div class="card"><h2>Error by segment</h2>${segs.length?`<div class="tbl"><table><thead><tr><th>Segment</th><th class="r">Actual k</th><th class="r">Forecast k</th><th class="r">WAPE</th><th class="r">Bias</th></tr></thead><tbody>${segs.map(([s,x])=>`<tr><td>${esc(s)}</td><td class="r num">${N(x.a,0)}</td><td class="r num">${N(x.f,0)}</td><td class="r num">${x.a?pct(x.ae/x.a,1):'–'}</td><td class="r num">${x.a?pct((x.f-x.a)/x.a,1):'–'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Accuracy appears once orders have shipped.</div>'}</div>
+   <div class="card"><h2>Accounts with the largest error</h2>${accts.length?`<div class="tbl"><table><thead><tr><th>Account</th><th class="r">WAPE</th><th class="r">Bias</th></tr></thead><tbody>${accts.map(r=>`<tr data-act="open-account" data-id="${r.a?r.a.id:''}"><td>${esc(r.a?r.a.name:'–')}</td><td class="r num">${pct(r.w,1)}</td><td class="r num">${r.b>0?'+':''}${pct(r.b,1)}</td></tr>`).join('')}</tbody></table></div><p class="muted small">Adjust the account’s steady-state volume or ramp. The forecast outputs are never edited directly.</p>`:'<div class="empty">No shipped orders in the last 6 weeks.</div>'}</div></div>`;
+}
+function vTasks(){
+  const st=ST.filter.tasks||'open';
+  const filters=`<select id="f-tasks" data-f="tasks" aria-label="Filter"><option value="open" ${st==='open'?'selected':''}>Open</option><option value="all" ${st==='all'?'selected':''}>All</option><option value="done" ${st==='done'?'selected':''}>Done</option></select>`;
+  const rows=S.tasks.filter(t=>st==='all'||(st==='done'?t.status==='done':t.status!=='done')).sort((a,b)=>String(a.due||'9').localeCompare(String(b.due||'9')));
+  return header('Tasks','Follow-ups, planning actions and everything else that needs doing.')+exampleBanner()+toolbar('tasks',{filters,addLabel:'Task'})+`<div id="tbl">${tableHTML('tasks',rows,{empty:'No tasks. Dashboard proposals create them for you when you approve.'})}</div>`;
+}
+
+/* ---- data & settings ---- */
+function vData(){
+  const c=cfg();const tab=ST.tab.data||'settings';
+  const tabs=[['settings','Settings'],['log','Change log'],['dict','Data dictionary'],['io','Import & export'],['about','About']];
+  let body='';
+  if(tab==='settings')body=`<form id="setf" class="card"><div class="f">
+   <label>Company name<input name="company" value="${esc(c.company)}"></label>
+   <label>Currency code<input name="cur" value="${esc(c.cur)}" maxlength="3"></label>
+   <label>Conversion cost per 1,000 pcs<input name="conv" type="number" step="0.01" value="${c.conv}"></label>
+   <label>Quote follow-up after (days)<input name="quote_days" type="number" value="${c.quote_days}"></label>
+   <label>Flag quiet accounts after (days)<input name="dormant_days" type="number" value="${c.dormant_days}"></label>
+   <label class="full">Seasonal index, Jan to Dec (1.00 is an average month)<input name="season" value="${esc(c.season.join(', '))}"></label>
+   <label class="full">Default ramp % for weeks 1 to 6<input name="ramp" value="${esc(c.ramp.join(', '))}"></label></div>
+   <div class="row"><button class="btn pri" type="submit">Save settings</button><span id="setmsg" class="errs"></span></div></form>
+   <h2 style="margin:16px 0 8px">Work centers</h2>${toolbar('workcenters',{addLabel:'Work center'})}<div id="tbl">${tableHTML('workcenters',S.workcenters,{empty:'No work centers yet.'})}</div>`;
+  if(tab==='log'){const rows=[...S.changelog].sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,ST.lim.log||150);
+    body=`<p class="muted">Append-only. Every edit records who, when, field, old and new value. ${S.changelog.length} entries.</p>${rows.length?`<div class="tbl"><table><thead><tr><th>When</th><th>Who</th><th>Record</th><th>Field</th><th>Old</th><th>New</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="mono small">${new Date(r.ts).toLocaleString()}</td><td>${esc(r.by)}</td><td>${esc(r.coll)} · ${esc(r.label||r.rec)}</td><td>${esc(r.field)}</td><td class="muted">${esc(r.old)}</td><td>${esc(r.new)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No changes yet.</div>'}${S.changelog.length>rows.length?`<button class="btn sm" style="margin-top:8px" data-act="more" data-c="log">Show more</button>`:''}`}
+  if(tab==='dict'){const dc=['accounts','contacts','activities','deals','products','materials','suppliers','pos','orders','workcenters','workorders','tasks'];
+    body=`<p class="muted">Every field, its type, unit and where the value comes from. Key for the customer master is the account record; one item per account.</p><div class="tbl"><table><thead><tr><th>Collection</th><th>Field</th><th>Type</th><th>Unit / allowed values</th><th>Source</th></tr></thead><tbody>${dc.flatMap(cn=>SCHEMA[cn].fields.map(f=>`<tr><td>${cn}</td><td class="mono">${f.k}</td><td>${{text:'text',num:'number',date:'date',sel:'choice',ref:'link → '+(f.c||''),bool:'yes/no',nums:'number list',lines:'line items',area:'text'}[f.t]}</td><td>${esc(f.u||(f.o?f.o.join(' | '):'–'))}</td><td>${esc(f.src||'Entered by user')}</td></tr>`)).join('')}<tr><td>all</td><td class="mono">updated_at</td><td>timestamp</td><td>ISO 8601</td><td>Set on save</td></tr><tr><td>derived</td><td class="mono">cost, margin, cover, utilization, forecast</td><td>calculated</td><td>see formulas on each page</td><td>Calculated, never typed</td></tr></tbody></table></div>`}
+  if(tab==='io')body=`<div class="grid cols2"><div class="card"><h2>Export CSV</h2><p class="muted small">Opens a save prompt. Dates are ISO (YYYY-MM-DD).</p><div class="row">${['accounts','contacts','deals','products','materials','orders','pos','tasks'].map(k=>`<button class="btn sm" data-act="export" data-c="${k}">${k}</button>`).join('')}</div></div>
+   <div class="card"><h2>Import accounts</h2><p class="muted small">CSV with a header row. Columns: name (required), status, segment, industry, city, country, owner, launch_date, launch_k_week, product_sku. Every cell is read as text first and validated before anything is saved.</p><input type="file" id="csvfile" accept=".csv,text/csv" aria-label="CSV file"><div id="csvprev"></div></div></div>`;
+  if(tab==='about')body=`<div class="card"><h2>How this app is built</h2><p>Plantline Ops is a single-page app. This public demo is a static page with made-up example data held in your browser tab. Nothing is sent or saved anywhere. The full version keeps records in a shared database with sign-in. Every edit is appended to the change log.</p>
+   <dl class="dl"><dt>Customer master</dt><dd>Accounts, one item each, with a data dictionary beside them.</dd><dt>Demand profile</dt><dd>volume × ramp(week since launch) × season(month), compared with capacity in machine hours.</dd><dt>Accuracy</dt><dd>WAPE = Σ|actual − forecast| ÷ Σ actual, by segment and account.</dd><dt>Human in the loop</dt><dd>The dashboard detects, proposes with evidence, and waits for your approval. Approvals are logged.</dd><dt>AI research</dt><dd>Claude proposes seasonality and risks per account. Nothing is used until you approve it, and every proposal is marked unverified.</dd><dt>Not included</dt><dd>Finished-goods stock, invoicing and tax, multi-site planning, lot tracking, and email sending. Orders move through Invoiced and Paid as status only.</dd></dl></div>`;
+  return header('Data & settings',esc(stamp()))+exampleBanner()+`<div class="tabs">${tabs.map(([k,l])=>`<button aria-selected="${tab===k}" data-act="tab" data-k="data" data-v="${k}">${l}</button>`).join('')}</div>`+body;
+}
+
+/* ============ main render ============ */
+function render(){
+  _plan=null;VIEW=VIEW||parseHash();
+  CUR_CODE=(cfg().cur||'USD').toUpperCase();
+  const m=$('#main');
+  if(!allLoaded()){return}
+  const R=recs();
+  renderNav({dashboard:R.filter(r=>r.sev!=='info').length||0,inventory:S.materials.filter(x=>matStatus(x).need).length||0});
+  const views={dashboard:vDashboard,accounts:vAccounts,pipeline:vPipeline,orders:vOrders,products:vProducts,inventory:vInventory,purchasing:vPurchasing,production:vProduction,demand:vDemand,tasks:vTasks,data:vData};
+  const keep=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.q;
+  m.innerHTML=VIEW.name==='account'?vAccount(VIEW.id):(views[VIEW.name]||vDashboard)();
+  if(keep){const el=$('#q-'+keep);if(el){el.focus();const v=el.value;el.setSelectionRange(v.length,v.length)}}
+  const sf=$('#setf');if(sf)sf.addEventListener('submit',saveSettings);
+  const cf=$('#csvfile');if(cf)cf.addEventListener('change',onCsv);
+  document.title='Plantline Ops';
+}
+async function saveSettings(e){
+  e.preventDefault();const f=new FormData(e.target);const msg=$('#setmsg');
+  const nums=(s,n)=>{const a=String(s).split(/[\s,]+/).filter(Boolean).map(Number);return a.length===n&&a.every(v=>!isNaN(v))?a:null};
+  const season=nums(f.get('season'),12),ramp=String(f.get('ramp')).split(/[\s,]+/).filter(Boolean).map(Number);
+  if(!season){msg.textContent='Seasonal index needs 12 numbers.';return}
+  if(!ramp.length||ramp.some(isNaN)){msg.textContent='Ramp needs numbers like 15, 30, 50, 70, 85, 100.';return}
+  const cur=String(f.get('cur')).trim().toUpperCase();if(!/^[A-Z]{3}$/.test(cur)){msg.textContent='Currency is a 3-letter code such as USD or EUR.';return}
+  const old=S.settings.find(x=>x.id==='main');
+  await save('settings',{...(old||{}),company:String(f.get('company')).trim()||'My Plant',cur,conv:+f.get('conv')||0,quote_days:+f.get('quote_days')||7,dormant_days:+f.get('dormant_days')||30,season,ramp},old,'main');
+  _plan=null;toast('Settings saved');
+}
+
+/* ============ forms ============ */
+let FORM=null;
+function closeModal(){$('#modal').classList.remove('on');$('#modal').innerHTML='';FORM=null}
+function refOpts(f,val){const rows=S[f.c];const lab=r=>f.c==='orders'?(r.order_no||r.id):f.c==='products'?(r.sku+' · '+r.name):(r.name||r.title||r.id);
+  return `<option value="">–</option>`+rows.slice().sort((a,b)=>lab(a).localeCompare(lab(b))).map(r=>`<option value="${r.id}" ${r.id===val?'selected':''}>${esc(lab(r))}</option>`).join('')}
+function fieldHTML(f,val,prefix=''){
+  const n=prefix+f.k;
+  if(f.t==='text'){return `<label class="${f.full?'full':''}">${esc(f.l)}${f.req?' *':''}<input name="${n}" value="${esc(val)}" ${f.list?`list="dl-${f.k}"`:''}></label>`}
+  if(f.t==='num')return `<label>${esc(f.l)}${f.u?` <span class="muted">(${esc(f.u)})</span>`:''}${f.req?' *':''}<input name="${n}" type="text" inputmode="decimal" value="${val==null?'':esc(val)}"></label>`;
+  if(f.t==='date')return `<label>${esc(f.l)}${f.req?' *':''}<input name="${n}" type="date" value="${esc(val||'')}"></label>`;
+  if(f.t==='area')return `<label class="full">${esc(f.l)}${f.req?' *':''}<textarea name="${n}" rows="3">${esc(val||'')}</textarea></label>`;
+  if(f.t==='bool')return `<label><span>${esc(f.l)}</span><input name="${n}" type="checkbox" ${val?'checked':''}></label>`;
+  if(f.t==='nums')return `<label class="${f.full?'full':''}">${esc(f.l)}${f.u?` <span class="muted">(${esc(f.u)})</span>`:''}<input name="${n}" value="${esc((val||[]).join(', '))}"></label>`;
+  if(f.t==='sel')return `<label>${esc(f.l)}${f.req?' *':''}<select name="${n}">${f.o.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+  if(f.t==='ref')return `<label>${esc(f.l)}${f.req?' *':''}<select name="${n}" ${f.auto?`data-auto="${f.auto}"`:''}>${refOpts(f,val)}</select></label>`;
+  if(f.t==='lines')return `<div class="full" style="grid-column:1/-1"><div class="muted small" style="margin-bottom:4px;font-weight:500">${esc(f.l)}</div><div class="lines" data-lines="${f.k}">${(val||[]).map(r=>lineRow(f,r)).join('')}</div><button type="button" class="btn sm" style="margin-top:6px" data-act="addrow" data-k="${f.k}">+ Add line</button><div class="small muted" id="tot-${f.k}"></div></div>`;
+  return '';
+}
+function lineRow(f,r={}){return `<div class="lrow">${f.sub.map(s=>`<label>${esc(s.l)}${s.t==='ref'?`<select data-sk="${s.k}" ${s.auto?`data-auto="${s.auto}"`:''}>${refOpts(s,r[s.k])}</select>`:`<input data-sk="${s.k}" inputmode="decimal" value="${r[s.k]==null?'':esc(r[s.k])}">`}</label>`).join('')}<button type="button" class="btn sm" data-act="delrow" aria-label="Remove line">✕</button></div>`}
+function openForm(coll,rec,pre={}){
+  const sc=SCHEMA[coll];const isNew=!rec||!rec.id;
+  rec=rec?clone(rec):{...(sc.defaults?sc.defaults():{}),...pre};
+  if(isNew&&coll==='orders'&&!rec.order_no)rec.order_no=nextNo('orders','order_no','SO-',1001);
+  if(isNew&&coll==='pos'&&!rec.po_no)rec.po_no=nextNo('pos','po_no','PO-',1001);
+  if(isNew&&coll==='workorders'&&!rec.wo_no)rec.wo_no=nextNo('workorders','wo_no','WO-',5001);
+  if(isNew&&coll==='orders'&&!rec.due_date)rec.due_date=iso(addDays(todayD(),14));
+  FORM={coll,rec,isNew};
+  let extra='';if(!isNew&&coll==='orders')extra=orderModalExtra(rec);if(!isNew&&coll==='pos')extra=poExtra(rec);
+  const lists={segment:[...new Set(S.accounts.map(a=>a.segment).filter(Boolean))],category:[...new Set(S.products.map(p=>p.category).filter(Boolean))]};
+  $('#modal').innerHTML=`<div class="sheet"><form id="form" novalidate><div class="hd"><h2>${isNew?'New':'Edit'} ${sc.label.toLowerCase()}</h2><button type="button" class="btn sm" data-act="close">Close</button></div>
+   <div class="f">${sc.fields.map(f=>fieldHTML(f,rec[f.k])).join('')}</div>
+   ${Object.entries(lists).map(([k,v])=>`<datalist id="dl-${k}">${v.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`).join('')}
+   <div class="errs" id="ferr"></div>
+   <div class="row" style="margin-top:12px"><button class="btn pri" type="submit">Save</button>${extra}<span style="flex:1"></span>${!isNew?`<button type="button" class="btn danger" data-act="del">Delete</button>`:''}</div></form></div>`;
+  $('#modal').classList.add('on');
+  updateTotals();
+  const first=$('#form input,#form select');if(first)first.focus();
+  $('#form').addEventListener('submit',submitForm);
+  $('#form').addEventListener('input',updateTotals);
+  $('#form').addEventListener('change',e=>{const t=e.target;if(t.dataset.auto&&t.tagName==='SELECT'){const p=get('products',t.value);const row=t.closest('.lrow');if(p&&row){const inp=row.querySelector(`[data-sk="${t.dataset.auto}"]`);if(inp&&!inp.value)inp.value=p[t.dataset.auto]}updateTotals()}});
+}
+function readLines(f,form){return [...form.querySelectorAll(`[data-lines="${f.k}"] .lrow`)].map(row=>{const o={};f.sub.forEach(s=>{const el=row.querySelector(`[data-sk="${s.k}"]`);let v=el.value.trim();o[s.k]=s.t==='ref'?v:(v===''?null:Number(v))});return o}).filter(o=>f.sub.some(s=>o[s.k]!==''&&o[s.k]!==null))}
+function updateTotals(){
+  if(!FORM)return;const form=$('#form');if(!form)return;
+  if(FORM.coll==='orders'){const f=SCHEMA.orders.fields.find(x=>x.k==='lines');const ls=readLines(f,form);const el=$('#tot-lines');if(el)el.textContent='Order value '+M(ls.reduce((s,l)=>s+(+l.qty_k||0)*(+l.price_k||0),0))}
+  if(FORM.coll==='products'){const f=SCHEMA.products.fields.find(x=>x.k==='bom');const ls=readLines(f,form);let cost=cfg().conv;ls.forEach(l=>{const m=get('materials',l.material_id);if(m)cost+=(+l.qty_per_k||0)*(m.cost||0)});const price=+form.elements.price_k.value;const el=$('#tot-bom');if(el)el.textContent=`Unit cost ${M(cost,2)} per 1,000${price?` · margin ${pct((price-cost)/price)}`:''}`}
+}
+async function submitForm(e){
+  e.preventDefault();const {coll,rec,isNew}=FORM;const sc=SCHEMA[coll];const form=e.target;const out={};const errs=[];
+  sc.fields.forEach(f=>{
+    const el=form.elements[f.k];let v;
+    if(f.t==='lines'){v=readLines(f,form)}
+    else if(f.t==='bool'){v=!!el.checked}
+    else if(f.t==='num'){const s=el.value.trim().replace(/,/g,'');if(s==='')v=null;else{v=Number(s);if(isNaN(v)){errs.push(`${f.l} must be a number.`);v=null}}}
+    else if(f.t==='nums'){const parts=el.value.split(/[\s,]+/).filter(Boolean);v=parts.map(Number);if(v.some(isNaN)){errs.push(`${f.l} must be numbers separated by commas.`);v=[]}}
+    else v=el.value.trim();
+    if(f.req&&(v===''||v==null||(Array.isArray(v)&&!v.length)))errs.push(`${f.l} is required.`);
+    out[f.k]=v;
+  });
+  if(coll==='orders'){if(!out.lines.length)errs.push('Add at least one line.');out.lines.forEach((l,i)=>{if(!l.product_id)errs.push(`Line ${i+1} needs a product.`);if(!(l.qty_k>0))errs.push(`Line ${i+1} needs a quantity above zero.`)})}
+  if(coll==='products'){out.bom=out.bom.filter(b=>b.material_id)}
+  if(coll==='pos'){out.lines=out.lines.filter(b=>b.material_id)}
+  if(coll==='accounts'&&out.include&&!(out.launch_k_week>0&&out.launch_date))errs.push('To include an account in the forecast, give it a launch date and a steady-state volume.');
+  if(errs.length){$('#ferr').innerHTML=errs.map(esc).join('<br>');return}
+  const btn=form.querySelector('button[type=submit]');btn.disabled=true;
+  try{
+    const nu={...(isNew?{}:rec),...out};
+    if(coll==='deals'&&out.stage==='Won'){const a=get('accounts',out.account_id);if(a&&a.status==='prospect')await patch('accounts',a.id,{status:'onboarding'})}
+    await save(coll,nu,isNew?null:get(coll,rec.id),isNew?undefined:rec.id);
+    _plan=null;closeModal();toast('Saved');
+  }catch(err){btn.disabled=false;$('#ferr').textContent='Could not save: '+((err&&err.message)||'try again')}
+}
+
+/* ============ CSV ============ */
+function csvEsc(v){v=v==null?'':Array.isArray(v)?JSON.stringify(v):String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function parseCSV(t){const rows=[];let r=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','){r.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;r.push(f);rows.push(r);r=[];f=''}else f+=c}
+  if(f!==''||r.length){r.push(f);rows.push(r)}return rows.filter(r=>r.some(x=>x.trim()!==''))}
+async function exportCsv(coll){
+  const keys=[...new Set(S[coll].flatMap(r=>Object.keys(r)))].filter(k=>k!=='research'&&k!=='id');
+  const csv=[['id',...keys].map(csvEsc).join(','),...S[coll].map(r=>['id',...keys].map(k=>csvEsc(k==='id'?r.id:r[k])).join(','))].join('\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');
+  a.href=url;a.download=`${coll}-${iso(todayD())}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Export ready');
+}
+let CSVROWS=[];
+async function onCsv(e){
+  const file=e.target.files[0];if(!file)return;const t=await file.text();const rows=parseCSV(t);const box=$('#csvprev');
+  if(rows.length<2){box.innerHTML='<div class="errs">The file has no data rows. Nothing was imported.</div>';return}
+  const head=rows[0].map(h=>h.trim().toLowerCase());const ix=k=>head.indexOf(k);
+  if(ix('name')<0){box.innerHTML='<div class="errs">A “name” column is required in the header row.</div>';return}
+  const seen=new Set(S.accounts.map(a=>a.name.toLowerCase()));CSVROWS=[];const bad=[];
+  rows.slice(1).forEach((r,i)=>{const g=k=>ix(k)>=0?String(r[ix(k)]||'').trim():'';const name=g('name');const errs=[];
+    if(!name)errs.push('name is empty');else if(seen.has(name.toLowerCase()))errs.push('already exists');
+    const status=(g('status')||'prospect').toLowerCase();if(!SCHEMA.accounts.fields[1].o.includes(status))errs.push('status “'+status+'” not allowed');
+    const ld=g('launch_date');if(ld&&!parseD(ld))errs.push('launch_date must be YYYY-MM-DD');
+    const vol=g('launch_k_week');if(vol&&isNaN(Number(vol)))errs.push('launch_k_week must be a number');
+    const sku=g('product_sku');const prod=sku?S.products.find(p=>p.sku.toLowerCase()===sku.toLowerCase()):null;if(sku&&!prod)errs.push('unknown product_sku');
+    if(errs.length)bad.push({line:i+2,name,errs});else{seen.add(name.toLowerCase());CSVROWS.push({name,status,segment:g('segment'),industry:g('industry'),city:g('city'),country:g('country'),owner:g('owner'),launch_date:ld||'',launch_k_week:vol?Number(vol):null,product_id:prod?prod.id:'',include:false,ramp_pct:cfg().ramp})}});
+  box.innerHTML=`<p>${CSVROWS.length} row(s) valid, ${bad.length} rejected.</p>${bad.length?`<div class="errs">${bad.slice(0,10).map(b=>`Line ${b.line} ${esc(b.name)}: ${esc(b.errs.join('; '))}`).join('<br>')}</div>`:''}${CSVROWS.length?`<button class="btn pri" data-act="csv-go" style="margin-top:8px">Import ${CSVROWS.length} account(s)</button>`:'<div class="errs">Nothing valid to import, so nothing was changed.</div>'}`;
+}
+
+/* ============ actions ============ */
+const ACT={
+  close:()=>closeModal(),
+  new:(d)=>{const pre={};if(d.pre){d.pre.split(';').forEach(p=>{const [k,v]=p.split('=');pre[k]=v})}openForm(d.c,null,pre)},
+  edit:(d)=>{const r=get(d.c,d.id);if(r)openForm(d.c,r)},
+  'open-account':(d)=>{if(d.id)location.hash='account-'+d.id},
+  tab:(d)=>{ST.tab[d.k]=d.v;render()},
+  sort:(d)=>{const cur=ST.sort[d.c];ST.sort[d.c]=cur&&cur.i==+d.i?{i:+d.i,d:-cur.d}:{i:+d.i,d:1};render()},
+  more:(d)=>{ST.lim[d.c]=(ST.lim[d.c]||(d.c==='log'?150:100))+100;render()},
+  addrow:(d)=>{const f=SCHEMA[FORM.coll].fields.find(x=>x.k===d.k);$(`[data-lines="${d.k}"]`).insertAdjacentHTML('beforeend',lineRow(f,{}))},
+  delrow:(d,e)=>{e.target.closest('.lrow').remove();updateTotals()},
+  del:async(d,e)=>{const b=e.target.closest('button');if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Click again to delete';return}const {coll,rec}=FORM;await remove(coll,rec.id);_plan=null;closeModal();toast('Deleted')},
+  'order-next':(d)=>orderNext(d.id),
+  'po-send':async(d)=>{await patch('pos',d.id,{status:'Sent'});closeModal();toast('PO marked sent')},
+  'po-recv':async(d)=>{const po=get('pos',d.id);for(const l of (po.lines||[])){const m=get('materials',l.material_id);if(m)await patch('materials',m.id,{on_hand:(m.on_hand||0)+(+l.qty||0)})}await patch('pos',d.id,{status:'Received'});closeModal();toast('Stock updated')},
+  'wo-start':(d)=>woStart(d.id),'wo-done':(d)=>woDone(d.id),
+  'task-toggle':async(d,e)=>{await patch('tasks',d.id,{status:e.target.checked?'done':'open'})},
+  'rec-ok':async(d,e)=>{const r=RECMAP[d.key];if(!r)return;e.target.disabled=true;try{await r.run();await decide(d.key,'approved');toast('Done and logged')}catch(x){e.target.disabled=false;toast('Could not apply: '+((x&&x.message)||'error'))}},
+  'rec-no':async(d)=>{await decide(d.key,'dismissed')},
+  'deal-quote':(d)=>{const deal=get('deals',d.id);const p=get('products',deal.product_id);openForm('orders',null,{account_id:deal.account_id,lines:[{product_id:deal.product_id||'',qty_k:Math.round((deal.qty_k_month||0)/4.3*10)/10,price_k:p?p.price_k:null}]})},
+  research:(d)=>doResearch(d.id),'research-ok':(d)=>approveResearch(d.id),'research-no':(d)=>{delete RS[d.id];render()},
+  export:(d)=>exportCsv(d.c),
+  'csv-go':async(d,e)=>{if(!CSVROWS.length)return;e.target.disabled=true;let n=0;for(const r of CSVROWS){await save('accounts',r);n++}CSVROWS=[];toast(n+' accounts imported');render()},
+  'clear-examples':async(d,e)=>{const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Click again to remove all examples';return}b.disabled=true;b.textContent='Removing…';
+    for(const c of COLLS){for(const r of S[c].filter(x=>x.example)){await DB.collection(c).doc(r.id).delete()}}
+    await DB.collection('changelog').doc(uid('l')).set({ts:new Date().toISOString(),by:'you',coll:'workspace',rec:'',label:'',field:'(example data removed)',old:'',new:''});toast('Example data removed')}
+};
+document.addEventListener('click',e=>{
+  if(e.target.id==='modal'){closeModal();return}
+  const t=e.target.closest('[data-act]');if(!t)return;
+  if(t.matches('input[type=checkbox]')){return}
+  if(e.target.closest('select,input:not([type=checkbox])'))return;
+  const f=ACT[t.dataset.act];if(f){e.preventDefault();f(t.dataset,e)}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.act==='task-toggle'){ACT['task-toggle'](t.dataset,e);return}
+  if(t.dataset.f){ST.filter[t.dataset.f]=t.value;render();return}
+  if(t.dataset.stage){const d=get('deals',t.dataset.stage);if(d)patch('deals',d.id,{stage:t.value}).then(async()=>{if(t.value==='Won'){const a=get('accounts',d.account_id);if(a&&a.status==='prospect')await patch('accounts',a.id,{status:'onboarding'})}})}
+});
+document.addEventListener('input',e=>{
+  const q=e.target.dataset&&e.target.dataset.q;if(q){ST.q[q]=e.target.value;ST.lim[q]=100;const box=$('#tbl');if(box){render()}}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+
+/* ============ example data loader ============ */
+const SEED=[["settings","main",{"company":"Example: Paper Goods Co","cur":"USD","conv":9,"season":[1.05,1,1,0.98,0.98,1,1,1,1.02,1.02,1.08,1.12],"ramp":[15,30,50,70,85,100],"quote_days":7,"dormant_days":30,"horizon":12,"updated_at":"2026-11-02T08:00:00.000Z"}],["workcenters","wcf1",{"name":"Cup Former 1","kind":"Cup forming","hours_week":80,"oee":70,"updated_at":"2026-11-02T08:00:00.000Z"}],["workcenters","wcf2",{"name":"Cup Former 2","kind":"Cup forming","hours_week":80,"oee":70,"updated_at":"2026-11-02T08:00:00.000Z"}],["workcenters","wcb1",{"name":"Bowl Former","kind":"Bowl forming","hours_week":80,"oee":72,"updated_at":"2026-11-02T08:00:00.000Z"}],["workcenters","wcp1",{"name":"Plate Press","kind":"Plate pressing","hours_week":80,"oee":72,"updated_at":"2026-11-02T08:00:00.000Z"}],["suppliers","sup1",{"name":"Northline Paperboard Mills","contact":"Dana Whitfield","email":"dana@example.com","phone":"+1 555 0101","lead_days":14,"terms":"Net 30","updated_at":"2026-11-02T08:00:00.000Z"}],["suppliers","sup2",{"name":"InkWorks Supply","contact":"Lee Ortiz","email":"lee@example.com","phone":"+1 555 0102","lead_days":7,"terms":"Net 30","updated_at":"2026-11-02T08:00:00.000Z"}],["suppliers","sup3",{"name":"BoxCraft Packaging","contact":"Priya Nair","email":"priya@example.com","phone":"+1 555 0103","lead_days":10,"terms":"Net 45","updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt1",{"name":"Cup sidewall board, PE coated","uom":"kg","on_hand":3600,"reorder_point":2500,"cost":1.55,"supplier_id":"sup1","lead_days":14,"min_order":2000,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt2",{"name":"Cup bottom board, PE coated","uom":"kg","on_hand":2100,"reorder_point":900,"cost":1.5,"supplier_id":"sup1","lead_days":14,"min_order":1000,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt3",{"name":"Bowl board, PE coated","uom":"kg","on_hand":6500,"reorder_point":3000,"cost":1.62,"supplier_id":"sup1","lead_days":14,"min_order":2500,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt4",{"name":"Plate board, uncoated bleached","uom":"kg","on_hand":9800,"reorder_point":3500,"cost":1.35,"supplier_id":"sup1","lead_days":14,"min_order":3000,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt5",{"name":"Water-based ink","uom":"kg","on_hand":420,"reorder_point":100,"cost":9.0,"supplier_id":"sup2","lead_days":7,"min_order":100,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt6",{"name":"Shipping cartons","uom":"pcs","on_hand":9000,"reorder_point":3000,"cost":0.9,"supplier_id":"sup3","lead_days":10,"min_order":2000,"updated_at":"2026-11-02T08:00:00.000Z"}],["materials","mt7",{"name":"Poly sleeves","uom":"pcs","on_hand":12000,"reorder_point":4000,"cost":0.05,"supplier_id":"sup3","lead_days":10,"min_order":5000,"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr1",{"sku":"CUP-8","name":"8 oz hot cup","category":"Cups","price_k":32,"wc_id":"wcf1","rate_hr":4800,"scrap_pct":4,"bom":[{"material_id":"mt1","qty_per_k":5.6},{"material_id":"mt2","qty_per_k":1.6},{"material_id":"mt5","qty_per_k":0.03},{"material_id":"mt6","qty_per_k":2}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr2",{"sku":"CUP-12","name":"12 oz hot cup","category":"Cups","price_k":44,"wc_id":"wcf2","rate_hr":4200,"scrap_pct":4,"bom":[{"material_id":"mt1","qty_per_k":8.4},{"material_id":"mt2","qty_per_k":2.2},{"material_id":"mt5","qty_per_k":0.04},{"material_id":"mt6","qty_per_k":2}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr3",{"sku":"CUP-16","name":"16 oz hot cup","category":"Cups","price_k":52,"wc_id":"wcf2","rate_hr":3600,"scrap_pct":4,"bom":[{"material_id":"mt1","qty_per_k":10.8},{"material_id":"mt2","qty_per_k":2.8},{"material_id":"mt5","qty_per_k":0.05},{"material_id":"mt6","qty_per_k":3}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr4",{"sku":"BWL-12","name":"12 oz soup bowl","category":"Bowls","price_k":54,"wc_id":"wcb1","rate_hr":2800,"scrap_pct":4,"bom":[{"material_id":"mt3","qty_per_k":14},{"material_id":"mt5","qty_per_k":0.04},{"material_id":"mt6","qty_per_k":2}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr5",{"sku":"BWL-24","name":"24 oz salad bowl","category":"Bowls","price_k":82,"wc_id":"wcb1","rate_hr":2200,"scrap_pct":4,"bom":[{"material_id":"mt3","qty_per_k":24},{"material_id":"mt5","qty_per_k":0.05},{"material_id":"mt6","qty_per_k":3}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr6",{"sku":"PLT-7","name":"7 in plate","category":"Plates","price_k":46,"wc_id":"wcp1","rate_hr":3600,"scrap_pct":4,"bom":[{"material_id":"mt4","qty_per_k":16},{"material_id":"mt7","qty_per_k":2},{"material_id":"mt6","qty_per_k":2}],"updated_at":"2026-11-02T08:00:00.000Z"}],["products","pr7",{"sku":"PLT-9","name":"9 in plate","category":"Plates","price_k":66,"wc_id":"wcp1","rate_hr":3000,"scrap_pct":4,"bom":[{"material_id":"mt4","qty_per_k":26},{"material_id":"mt7","qty_per_k":2},{"material_id":"mt6","qty_per_k":2}],"updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac01",{"name":"Brightside Coffee Roasters","status":"active","segment":"Cafe","industry":"Specialty coffee","city":"Portland","country":"US","owner":"Maya","product_id":"pr1","launch_date":"2026-04-06","launch_k_week":60,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac02",{"name":"Harbor Street Cafes","status":"active","segment":"Cafe chain","industry":"Coffee shops","city":"Seattle","country":"US","owner":"Maya","product_id":"pr1","launch_date":"2026-01-26","launch_k_week":75,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac03",{"name":"Fresh Pour Tea House","status":"onboarding","segment":"Cafe","industry":"Bubble tea","city":"San Diego","country":"US","owner":"Maya","product_id":"pr3","launch_date":"2026-10-12","launch_k_week":45,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac04",{"name":"QuickBite Regional","status":"active","segment":"QSR","industry":"Quick service","city":"Denver","country":"US","owner":"Sam","product_id":"pr2","launch_date":"2026-05-04","launch_k_week":70,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac05",{"name":"Northwind Catering","status":"active","segment":"Catering","industry":"Event catering","city":"Chicago","country":"US","owner":"Sam","product_id":"pr4","launch_date":"2026-06-15","launch_k_week":35,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac06",{"name":"Metro Hospital Foodservice","status":"active","segment":"Institutional","industry":"Healthcare","city":"Columbus","country":"US","owner":"Sam","product_id":"pr5","launch_date":"2025-11-03","launch_k_week":28,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac07",{"name":"Campus Dining Services","status":"active","segment":"Institutional","industry":"Education","city":"Madison","country":"US","owner":"Maya","product_id":"pr6","launch_date":"2026-02-23","launch_k_week":55,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac08",{"name":"Greenleaf Salad Bars","status":"onboarding","segment":"QSR","industry":"Fast casual","city":"Austin","country":"US","owner":"Sam","product_id":"pr5","launch_date":"2026-10-19","launch_k_week":30,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac09",{"name":"Lakeview Event Rentals","status":"active","segment":"Catering","industry":"Event rental","city":"Cleveland","country":"US","owner":"Maya","product_id":"pr7","launch_date":"2026-06-29","launch_k_week":40,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac10",{"name":"Alpine Ski Lodges","status":"active","segment":"Hospitality","industry":"Resorts","city":"Salt Lake City","country":"US","owner":"Sam","product_id":"pr3","launch_date":"2026-04-20","launch_k_week":32,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac11",{"name":"Corner Deli Group","status":"active","segment":"QSR","industry":"Delis","city":"Boston","country":"US","owner":"Maya","product_id":"pr4","launch_date":"2026-07-27","launch_k_week":38,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac12",{"name":"Orchard Bakery","status":"active","segment":"Cafe","industry":"Bakery","city":"Sacramento","country":"US","owner":"Maya","product_id":"pr2","launch_date":"2026-06-01","launch_k_week":30,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac13",{"name":"PackWell Distributors","status":"active","segment":"Distributor","industry":"Foodservice distribution","city":"Dallas","country":"US","owner":"Sam","product_id":"pr1","launch_date":"2025-12-01","launch_k_week":52,"ramp_pct":[15,30,50,70,85,100],"include":true,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac14",{"name":"City Stadium Concessions","status":"prospect","segment":"Events","industry":"Sports venues","city":"Kansas City","country":"US","owner":"Sam","product_id":"pr2","launch_date":"2026-12-14","launch_k_week":80,"ramp_pct":[15,30,50,70,85,100],"include":false,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac15",{"name":"FoodHub Supply","status":"prospect","segment":"Distributor","industry":"Foodservice distribution","city":"Atlanta","country":"US","owner":"Sam","product_id":"pr6","launch_date":"2026-12-14","launch_k_week":60,"ramp_pct":[15,30,50,70,85,100],"include":false,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["accounts","ac16",{"name":"Sunrise Smoothie Co","status":"prospect","segment":"QSR","industry":"Smoothies","city":"Phoenix","country":"US","owner":"Maya","product_id":"pr4","launch_date":"2026-12-14","launch_k_week":25,"ramp_pct":[15,30,50,70,85,100],"include":false,"notes":"Example account.","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct01",{"account_id":"ac01","name":"Avery Kowalski","role":"Owner","email":"avery@example.com","phone":"+1 555 0201","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct02",{"account_id":"ac01","name":"Casey Okafor","role":"Owner","email":"casey@example.com","phone":"+1 555 0202","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct03",{"account_id":"ac02","name":"Avery Okafor","role":"Owner","email":"avery@example.com","phone":"+1 555 0203","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct04",{"account_id":"ac03","name":"Riley Okafor","role":"Purchasing manager","email":"riley@example.com","phone":"+1 555 0204","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct05",{"account_id":"ac03","name":"Jordan Rivera","role":"Operations lead","email":"jordan@example.com","phone":"+1 555 0205","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct06",{"account_id":"ac04","name":"Jamie Kowalski","role":"Purchasing manager","email":"jamie@example.com","phone":"+1 555 0206","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct07",{"account_id":"ac05","name":"Taylor Rivera","role":"Owner","email":"taylor@example.com","phone":"+1 555 0207","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct08",{"account_id":"ac06","name":"Jordan Rivera","role":"Purchasing manager","email":"jordan@example.com","phone":"+1 555 0208","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct09",{"account_id":"ac07","name":"Casey Rivera","role":"Owner","email":"casey@example.com","phone":"+1 555 0209","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct10",{"account_id":"ac07","name":"Avery Brooks","role":"Owner","email":"avery@example.com","phone":"+1 555 0210","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct11",{"account_id":"ac08","name":"Casey Patel","role":"Owner","email":"casey@example.com","phone":"+1 555 0211","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct12",{"account_id":"ac08","name":"Riley Kowalski","role":"Owner","email":"riley@example.com","phone":"+1 555 0212","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct13",{"account_id":"ac09","name":"Jordan Kowalski","role":"Owner","email":"jordan@example.com","phone":"+1 555 0213","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct14",{"account_id":"ac09","name":"Riley Haddad","role":"Owner","email":"riley@example.com","phone":"+1 555 0214","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct15",{"account_id":"ac10","name":"Jordan Nguyen","role":"Owner","email":"jordan@example.com","phone":"+1 555 0215","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct16",{"account_id":"ac11","name":"Casey Nguyen","role":"Purchasing manager","email":"casey@example.com","phone":"+1 555 0216","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct17",{"account_id":"ac11","name":"Alex Chen","role":"Operations lead","email":"alex@example.com","phone":"+1 555 0217","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct18",{"account_id":"ac12","name":"Jordan Haddad","role":"Purchasing manager","email":"jordan@example.com","phone":"+1 555 0218","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct19",{"account_id":"ac13","name":"Riley Haddad","role":"Owner","email":"riley@example.com","phone":"+1 555 0219","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct20",{"account_id":"ac13","name":"Jordan Rivera","role":"Owner","email":"jordan@example.com","phone":"+1 555 0220","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct21",{"account_id":"ac14","name":"Alex Patel","role":"Owner","email":"alex@example.com","phone":"+1 555 0221","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct22",{"account_id":"ac15","name":"Alex Kowalski","role":"Purchasing manager","email":"alex@example.com","phone":"+1 555 0222","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct23",{"account_id":"ac15","name":"Jamie Haddad","role":"Operations lead","email":"jamie@example.com","phone":"+1 555 0223","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct24",{"account_id":"ac16","name":"Casey Nguyen","role":"Purchasing manager","email":"casey@example.com","phone":"+1 555 0224","updated_at":"2026-11-02T08:00:00.000Z"}],["contacts","ct25",{"account_id":"ac16","name":"Morgan Chen","role":"Operations lead","email":"morgan@example.com","phone":"+1 555 0225","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av01",{"account_id":"ac01","type":"meeting","date":"2026-10-31","text":"On-site visit. Discussed custom print for sleeves.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av02",{"account_id":"ac01","type":"sample sent","date":"2026-10-28","text":"Sent 200 sample units for line trials.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av03",{"account_id":"ac02","type":"email","date":"2026-10-28","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av04",{"account_id":"ac03","type":"call","date":"2026-10-17","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av05",{"account_id":"ac04","type":"email","date":"2026-10-14","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av06",{"account_id":"ac04","type":"email","date":"2026-10-17","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av07",{"account_id":"ac05","type":"email","date":"2026-10-18","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av08",{"account_id":"ac06","type":"call","date":"2026-10-19","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av09",{"account_id":"ac06","type":"sample sent","date":"2026-10-25","text":"Sent 200 sample units for line trials.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av10",{"account_id":"ac07","type":"meeting","date":"2026-10-13","text":"On-site visit. Discussed custom print for sleeves.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av11",{"account_id":"ac08","type":"call","date":"2026-10-25","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av12",{"account_id":"ac08","type":"email","date":"2026-10-19","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av13",{"account_id":"ac09","type":"call","date":"2026-10-27","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av14",{"account_id":"ac10","type":"sample sent","date":"2026-09-25","text":"Sent 200 sample units for line trials.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av15",{"account_id":"ac11","type":"meeting","date":"2026-10-19","text":"On-site visit. Discussed custom print for sleeves.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av16",{"account_id":"ac11","type":"call","date":"2026-10-29","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av17",{"account_id":"ac12","type":"email","date":"2026-09-05","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av18",{"account_id":"ac13","type":"call","date":"2026-10-20","text":"Reviewed Q4 volumes; they expect a holiday lift of about 10%.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av19",{"account_id":"ac14","type":"note","date":"2026-10-17","text":"Asked for net 45 terms. Passed to finance.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av20",{"account_id":"ac14","type":"email","date":"2026-10-13","text":"Sent updated price sheet for hot cups.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av21",{"account_id":"ac15","type":"note","date":"2026-10-27","text":"Asked for net 45 terms. Passed to finance.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av22",{"account_id":"ac15","type":"sample sent","date":"2026-10-26","text":"Sent 200 sample units for line trials.","updated_at":"2026-11-02T08:00:00.000Z"}],["activities","av23",{"account_id":"ac16","type":"meeting","date":"2026-10-24","text":"On-site visit. Discussed custom print for sleeves.","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl1",{"title":"Holiday program, 12 oz","account_id":"ac14","stage":"Quote sent","product_id":"pr2","qty_k_month":320,"value":14080,"close_date":"2026-11-20","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl2",{"title":"Salad bowl rollout","account_id":"ac16","stage":"Sampling","product_id":"pr4","qty_k_month":90,"value":4860,"close_date":"2026-12-07","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl3",{"title":"Plate supply agreement","account_id":"ac15","stage":"Negotiation","product_id":"pr6","qty_k_month":240,"value":11040,"close_date":"2026-11-12","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl4",{"title":"16 oz tea cups","account_id":"ac03","stage":"Won","product_id":"pr3","qty_k_month":190,"value":9880,"close_date":"2026-10-23","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl5",{"title":"Soup bowls, winter menu","account_id":"ac11","stage":"Quote sent","product_id":"pr4","qty_k_month":60,"value":3240,"close_date":"2026-11-14","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl6",{"title":"Co-branded sleeves","account_id":"ac01","stage":"Lead","product_id":"pr1","qty_k_month":80,"value":2560,"close_date":"2026-12-17","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl7",{"title":"Second location order","account_id":"ac02","stage":"Negotiation","product_id":"pr1","qty_k_month":150,"value":4800,"close_date":"2026-11-11","updated_at":"2026-11-02T08:00:00.000Z"}],["deals","dl8",{"title":"Hospital 24 oz bowls","account_id":"ac06","stage":"Lost","product_id":"pr5","qty_k_month":40,"value":3280,"close_date":"2026-10-28","updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1001",{"order_no":"SO-1001","account_id":"ac01","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr1","qty_k":65.9,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1002",{"order_no":"SO-1002","account_id":"ac02","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr1","qty_k":83.6,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1003",{"order_no":"SO-1003","account_id":"ac04","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr2","qty_k":75.5,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1004",{"order_no":"SO-1004","account_id":"ac05","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr4","qty_k":39.5,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1005",{"order_no":"SO-1005","account_id":"ac06","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr5","qty_k":26.5,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1006",{"order_no":"SO-1006","account_id":"ac07","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr6","qty_k":62.2,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1007",{"order_no":"SO-1007","account_id":"ac09","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr7","qty_k":41.8,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1008",{"order_no":"SO-1008","account_id":"ac10","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr3","qty_k":32.0,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1009",{"order_no":"SO-1009","account_id":"ac11","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr4","qty_k":35.1,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1010",{"order_no":"SO-1010","account_id":"ac12","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr2","qty_k":27.2,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1011",{"order_no":"SO-1011","account_id":"ac13","status":"Paid","order_date":"2026-09-12","due_date":"2026-09-24","lines":[{"product_id":"pr1","qty_k":64.4,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1012",{"order_no":"SO-1012","account_id":"ac01","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr1","qty_k":57.4,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1013",{"order_no":"SO-1013","account_id":"ac02","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr1","qty_k":89.5,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1014",{"order_no":"SO-1014","account_id":"ac04","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr2","qty_k":76.9,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1015",{"order_no":"SO-1015","account_id":"ac05","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr4","qty_k":36.5,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1016",{"order_no":"SO-1016","account_id":"ac06","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr5","qty_k":27.1,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1017",{"order_no":"SO-1017","account_id":"ac07","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr6","qty_k":51.7,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1018",{"order_no":"SO-1018","account_id":"ac09","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr7","qty_k":36.6,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1019",{"order_no":"SO-1019","account_id":"ac10","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr3","qty_k":30.5,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1020",{"order_no":"SO-1020","account_id":"ac11","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr4","qty_k":39.3,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1021",{"order_no":"SO-1021","account_id":"ac12","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr2","qty_k":33.2,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1022",{"order_no":"SO-1022","account_id":"ac13","status":"Paid","order_date":"2026-09-19","due_date":"2026-10-01","lines":[{"product_id":"pr1","qty_k":61.2,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1023",{"order_no":"SO-1023","account_id":"ac01","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr1","qty_k":58.0,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1024",{"order_no":"SO-1024","account_id":"ac02","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr1","qty_k":92.3,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1025",{"order_no":"SO-1025","account_id":"ac04","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr2","qty_k":63.1,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1026",{"order_no":"SO-1026","account_id":"ac05","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr4","qty_k":33.7,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1027",{"order_no":"SO-1027","account_id":"ac06","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr5","qty_k":28.2,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1028",{"order_no":"SO-1028","account_id":"ac07","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr6","qty_k":50.2,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1029",{"order_no":"SO-1029","account_id":"ac09","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr7","qty_k":39.5,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1030",{"order_no":"SO-1030","account_id":"ac10","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr3","qty_k":33.2,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1031",{"order_no":"SO-1031","account_id":"ac11","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr4","qty_k":35.3,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1032",{"order_no":"SO-1032","account_id":"ac12","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr2","qty_k":29.6,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1033",{"order_no":"SO-1033","account_id":"ac13","status":"Paid","order_date":"2026-09-26","due_date":"2026-10-08","lines":[{"product_id":"pr1","qty_k":63.7,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1034",{"order_no":"SO-1034","account_id":"ac01","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr1","qty_k":68.3,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1035",{"order_no":"SO-1035","account_id":"ac02","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr1","qty_k":88.9,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1036",{"order_no":"SO-1036","account_id":"ac03","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr3","qty_k":7.2,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1037",{"order_no":"SO-1037","account_id":"ac04","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr2","qty_k":72.8,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1038",{"order_no":"SO-1038","account_id":"ac05","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr4","qty_k":32.6,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1039",{"order_no":"SO-1039","account_id":"ac06","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr5","qty_k":25.4,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1040",{"order_no":"SO-1040","account_id":"ac07","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr6","qty_k":49.6,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1041",{"order_no":"SO-1041","account_id":"ac09","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr7","qty_k":42.8,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1042",{"order_no":"SO-1042","account_id":"ac10","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr3","qty_k":36.3,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1043",{"order_no":"SO-1043","account_id":"ac11","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr4","qty_k":34.3,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1044",{"order_no":"SO-1044","account_id":"ac12","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr2","qty_k":31.6,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1045",{"order_no":"SO-1045","account_id":"ac13","status":"Paid","order_date":"2026-10-03","due_date":"2026-10-15","lines":[{"product_id":"pr1","qty_k":60.0,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1046",{"order_no":"SO-1046","account_id":"ac01","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr1","qty_k":64.6,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1047",{"order_no":"SO-1047","account_id":"ac02","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr1","qty_k":84.5,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1048",{"order_no":"SO-1048","account_id":"ac03","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr3","qty_k":15.4,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1049",{"order_no":"SO-1049","account_id":"ac04","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr2","qty_k":64.1,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1050",{"order_no":"SO-1050","account_id":"ac05","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr4","qty_k":36.1,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1051",{"order_no":"SO-1051","account_id":"ac06","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr5","qty_k":30.2,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1052",{"order_no":"SO-1052","account_id":"ac07","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr6","qty_k":61.5,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1053",{"order_no":"SO-1053","account_id":"ac08","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr5","qty_k":4.9,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1054",{"order_no":"SO-1054","account_id":"ac09","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr7","qty_k":42.8,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1055",{"order_no":"SO-1055","account_id":"ac10","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr3","qty_k":34.9,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1056",{"order_no":"SO-1056","account_id":"ac11","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr4","qty_k":42.6,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1057",{"order_no":"SO-1057","account_id":"ac12","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr2","qty_k":29.5,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1058",{"order_no":"SO-1058","account_id":"ac13","status":"Invoiced","order_date":"2026-10-10","due_date":"2026-10-22","lines":[{"product_id":"pr1","qty_k":61.9,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1059",{"order_no":"SO-1059","account_id":"ac01","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr1","qty_k":67.1,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1060",{"order_no":"SO-1060","account_id":"ac02","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr1","qty_k":91.7,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1061",{"order_no":"SO-1061","account_id":"ac03","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr3","qty_k":22.5,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1062",{"order_no":"SO-1062","account_id":"ac04","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr2","qty_k":76.4,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1063",{"order_no":"SO-1063","account_id":"ac05","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr4","qty_k":38.8,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1064",{"order_no":"SO-1064","account_id":"ac06","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr5","qty_k":29.1,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1065",{"order_no":"SO-1065","account_id":"ac07","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr6","qty_k":57.8,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1066",{"order_no":"SO-1066","account_id":"ac08","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr5","qty_k":8.9,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1067",{"order_no":"SO-1067","account_id":"ac09","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr7","qty_k":41.6,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1068",{"order_no":"SO-1068","account_id":"ac10","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr3","qty_k":33.5,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1069",{"order_no":"SO-1069","account_id":"ac11","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr4","qty_k":34.9,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1070",{"order_no":"SO-1070","account_id":"ac12","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr2","qty_k":31.6,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1071",{"order_no":"SO-1071","account_id":"ac13","status":"Shipped","order_date":"2026-10-17","due_date":"2026-10-29","lines":[{"product_id":"pr1","qty_k":64.6,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1072",{"order_no":"SO-1072","account_id":"ac01","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr1","qty_k":61.3,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1073",{"order_no":"SO-1073","account_id":"ac02","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr1","qty_k":76.7,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1074",{"order_no":"SO-1074","account_id":"ac03","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr3","qty_k":30.2,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1075",{"order_no":"SO-1075","account_id":"ac04","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr2","qty_k":61.7,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1076",{"order_no":"SO-1076","account_id":"ac05","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr4","qty_k":30.5,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1077",{"order_no":"SO-1077","account_id":"ac06","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr5","qty_k":27.1,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1078",{"order_no":"SO-1078","account_id":"ac07","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr6","qty_k":55.8,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1079",{"order_no":"SO-1079","account_id":"ac08","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr5","qty_k":15.0,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1080",{"order_no":"SO-1080","account_id":"ac10","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr3","qty_k":27.7,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1081",{"order_no":"SO-1081","account_id":"ac11","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr4","qty_k":38.4,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1082",{"order_no":"SO-1082","account_id":"ac12","status":"In production","order_date":"2026-10-24","due_date":"2026-11-05","lines":[{"product_id":"pr2","qty_k":27.0,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1083",{"order_no":"SO-1083","account_id":"ac01","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr1","qty_k":57.6,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1084",{"order_no":"SO-1084","account_id":"ac02","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr1","qty_k":70.1,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1085",{"order_no":"SO-1085","account_id":"ac03","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr3","qty_k":34.7,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1086",{"order_no":"SO-1086","account_id":"ac04","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr2","qty_k":72.7,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1087",{"order_no":"SO-1087","account_id":"ac06","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr5","qty_k":26.5,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1088",{"order_no":"SO-1088","account_id":"ac07","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr6","qty_k":51.3,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1089",{"order_no":"SO-1089","account_id":"ac08","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr5","qty_k":20.4,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1090",{"order_no":"SO-1090","account_id":"ac09","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr7","qty_k":41.9,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1091",{"order_no":"SO-1091","account_id":"ac10","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr3","qty_k":34.2,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1092",{"order_no":"SO-1092","account_id":"ac11","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr4","qty_k":34.2,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1093",{"order_no":"SO-1093","account_id":"ac12","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr2","qty_k":27.7,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1094",{"order_no":"SO-1094","account_id":"ac13","status":"Confirmed","order_date":"2026-10-31","due_date":"2026-11-12","lines":[{"product_id":"pr1","qty_k":49.6,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1095",{"order_no":"SO-1095","account_id":"ac02","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr1","qty_k":69.9,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1096",{"order_no":"SO-1096","account_id":"ac05","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr4","qty_k":30.8,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1097",{"order_no":"SO-1097","account_id":"ac06","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr5","qty_k":29.5,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1098",{"order_no":"SO-1098","account_id":"ac07","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr6","qty_k":55.9,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1099",{"order_no":"SO-1099","account_id":"ac09","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr7","qty_k":41.4,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1100",{"order_no":"SO-1100","account_id":"ac10","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr3","qty_k":28.6,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1101",{"order_no":"SO-1101","account_id":"ac11","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr4","qty_k":33.0,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1102",{"order_no":"SO-1102","account_id":"ac13","status":"Confirmed","order_date":"2026-11-07","due_date":"2026-11-19","lines":[{"product_id":"pr1","qty_k":46.5,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1103",{"order_no":"SO-1103","account_id":"ac01","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr1","qty_k":60.0,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1104",{"order_no":"SO-1104","account_id":"ac02","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr1","qty_k":75.0,"price_k":32}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1105",{"order_no":"SO-1105","account_id":"ac07","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr6","qty_k":53.2,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1106",{"order_no":"SO-1106","account_id":"ac08","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr5","qty_k":26.0,"price_k":82}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1107",{"order_no":"SO-1107","account_id":"ac09","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr7","qty_k":40.7,"price_k":66}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1108",{"order_no":"SO-1108","account_id":"ac10","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr3","qty_k":29.5,"price_k":52}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1109",{"order_no":"SO-1109","account_id":"ac11","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr4","qty_k":38.6,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","od1110",{"order_no":"SO-1110","account_id":"ac12","status":"Confirmed","order_date":"2026-11-14","due_date":"2026-11-26","lines":[{"product_id":"pr2","qty_k":29.9,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","oq1",{"order_no":"SO-1900","account_id":"ac14","status":"Quote","order_date":"2026-10-21","due_date":"2026-12-17","lines":[{"product_id":"pr2","qty_k":80,"price_k":44}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","oq2",{"order_no":"SO-1901","account_id":"ac16","status":"Quote","order_date":"2026-10-30","due_date":"2026-12-17","lines":[{"product_id":"pr4","qty_k":25,"price_k":54}],"updated_at":"2026-11-02T08:00:00.000Z"}],["orders","oq3",{"order_no":"SO-1902","account_id":"ac15","status":"Quote","order_date":"2026-10-24","due_date":"2026-12-17","lines":[{"product_id":"pr6","qty_k":60,"price_k":46}],"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5001",{"wo_no":"WO-5001","order_id":"od1072","product_id":"pr1","qty_k":61.3,"wc_id":"wcf1","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5002",{"wo_no":"WO-5002","order_id":"od1073","product_id":"pr1","qty_k":76.7,"wc_id":"wcf1","week_start":"2026-11-02","status":"Planned","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5003",{"wo_no":"WO-5003","order_id":"od1074","product_id":"pr3","qty_k":30.2,"wc_id":"wcf2","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5004",{"wo_no":"WO-5004","order_id":"od1075","product_id":"pr2","qty_k":61.7,"wc_id":"wcf2","week_start":"2026-11-02","status":"Planned","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5005",{"wo_no":"WO-5005","order_id":"od1076","product_id":"pr4","qty_k":30.5,"wc_id":"wcb1","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5006",{"wo_no":"WO-5006","order_id":"od1077","product_id":"pr5","qty_k":27.1,"wc_id":"wcb1","week_start":"2026-11-02","status":"Planned","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5007",{"wo_no":"WO-5007","order_id":"od1078","product_id":"pr6","qty_k":55.8,"wc_id":"wcp1","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5008",{"wo_no":"WO-5008","order_id":"od1079","product_id":"pr5","qty_k":15.0,"wc_id":"wcb1","week_start":"2026-11-02","status":"Planned","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5009",{"wo_no":"WO-5009","order_id":"od1080","product_id":"pr3","qty_k":27.7,"wc_id":"wcf2","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5010",{"wo_no":"WO-5010","order_id":"od1081","product_id":"pr4","qty_k":38.4,"wc_id":"wcb1","week_start":"2026-11-02","status":"Planned","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["workorders","wo5011",{"wo_no":"WO-5011","order_id":"od1082","product_id":"pr2","qty_k":27.0,"wc_id":"wcf2","week_start":"2026-11-02","status":"Running","consumed":false,"updated_at":"2026-11-02T08:00:00.000Z"}],["pos","po1",{"po_no":"PO-1001","supplier_id":"sup1","status":"Sent","eta":"2026-11-11","lines":[{"material_id":"mt3","qty":5000}],"updated_at":"2026-11-02T08:00:00.000Z"}],["pos","po2",{"po_no":"PO-1002","supplier_id":"sup3","status":"Received","eta":"2026-10-27","lines":[{"material_id":"mt6","qty":6000}],"updated_at":"2026-11-02T08:00:00.000Z"}],["tasks","tk1",{"title":"Send revised price sheet to Harbor Street Cafes","due":"2026-11-04","owner":"","priority":"high","status":"open","related":"Harbor Street Cafes","updated_at":"2026-11-02T08:00:00.000Z"}],["tasks","tk2",{"title":"Confirm Q4 print artwork for sleeves","due":"2026-11-07","owner":"","priority":"normal","status":"open","related":"Brightside Coffee Roasters","updated_at":"2026-11-02T08:00:00.000Z"}],["tasks","tk3",{"title":"Book maintenance window for Cup Former 1","due":"2026-11-11","owner":"","priority":"normal","status":"open","related":"Cup Former 1","updated_at":"2026-11-02T08:00:00.000Z"}],["tasks","tk4",{"title":"Collect net 45 credit application","due":"2026-11-06","owner":"","priority":"normal","status":"open","related":"Campus Dining Services","updated_at":"2026-11-02T08:00:00.000Z"}],["tasks","tk5",{"title":"Review supplier price increase notice","due":"2026-10-31","owner":"","priority":"high","status":"open","related":"Northline Paperboard Mills","updated_at":"2026-11-02T08:00:00.000Z"}]];
+function shiftDates(v,days){
+  if(typeof v==='string'&&/^\d{4}-\d\d-\d\d$/.test(v)){const d=parseD(v);return iso(addDays(d,days))}
+  if(Array.isArray(v))return v.map(x=>shiftDates(x,days));
+  if(v&&typeof v==='object'){const o={};for(const k in v)o[k]=shiftDates(v[k],days);return o}
+  return v;
+}
+async function seedDemo(){
+  const base=new Date(2026,10,2);const days=Math.round((monday(todayD())-base)/DAY/7)*7;
+  for(const [c,id,d] of SEED)await DB.collection(c).doc(id).set({...shiftDates(d,days),example:true});
+}
+/* ============ boot ============ */
+VIEW=parseHash();
+initDb();
+</script>
+</body></html>
